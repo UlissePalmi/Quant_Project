@@ -61,21 +61,24 @@ def loop_clean(html_content):
 
     return html_content
 
+def remove_numeric_entities(s: str) -> str:
+    return re.sub(r'&#(?:\d{1,8}|[xX][0-9A-Fa-f]{1,8});', '', s)
+
 def unwrap_tags(html_content): # Removes matching <ix...> and </ix...> tags but keeps the content between them.
     pattern = re.compile(r'<ix:[a-zA-Z0-9_:]+.*?>', re.IGNORECASE)
-    html_content = re.sub(pattern, '', html_content)
+    html_content = re.sub(pattern, '\n', html_content)
 
     pattern = re.compile(r'</ix:[a-zA-Z0-9_:]+>', re.IGNORECASE)
     html_content = re.sub(pattern, '', html_content)
 
     pattern = re.compile(r'<html.*?>', re.IGNORECASE | re.DOTALL)
-    html_content = re.sub(pattern, '', html_content)
+    html_content = re.sub(pattern, '\n', html_content)
 
     pattern = re.compile(r'</html>', re.IGNORECASE)
     html_content = re.sub(pattern, '', html_content)
 
     pattern = re.compile(r'<font.*?>', re.IGNORECASE | re.DOTALL)
-    html_content = re.sub(pattern, '', html_content)
+    html_content = re.sub(pattern, '\n', html_content)
 
     pattern = re.compile(r'</font>', re.IGNORECASE)
     html_content = re.sub(pattern, '', html_content)
@@ -87,37 +90,37 @@ def unwrap_tags(html_content): # Removes matching <ix...> and </ix...> tags but 
     html_content = re.sub(pattern, '', html_content)
     
     pattern = re.compile(r'<B>', re.IGNORECASE | re.DOTALL)         #   REMOVE TO FIND ITEMS!!!!!
-    html_content = re.sub(pattern, '', html_content)
+    html_content = re.sub(pattern, '\n', html_content)
 
     pattern = re.compile(r'</B>', re.IGNORECASE)                    #   REMOVE TO FIND ITEMS!!!!!
     html_content = re.sub(pattern, '', html_content)
 
     pattern = re.compile(r'<center>', re.IGNORECASE | re.DOTALL)
-    html_content = re.sub(pattern, '', html_content)
+    html_content = re.sub(pattern, '\n', html_content)
 
     pattern = re.compile(r'</center>', re.IGNORECASE)
     html_content = re.sub(pattern, '', html_content)
 
     pattern = re.compile(r'<a.*?>', re.IGNORECASE | re.DOTALL)
-    html_content = re.sub(pattern, '', html_content)
+    html_content = re.sub(pattern, '\n', html_content)
 
     pattern = re.compile(r'</a>', re.IGNORECASE)
     html_content = re.sub(pattern, '', html_content)
 
     pattern = re.compile(r'<table.*?>', re.DOTALL | re.IGNORECASE)
-    html_content = re.sub(pattern, '', html_content)
+    html_content = re.sub(pattern, '\n', html_content)
 
     pattern = re.compile(r'</table>', re.DOTALL | re.IGNORECASE)
     html_content = re.sub(pattern, '', html_content)
 
     pattern = re.compile(r'<tr.*?>', re.DOTALL | re.IGNORECASE)
-    html_content = re.sub(pattern, '', html_content)
+    html_content = re.sub(pattern, '\n', html_content)
 
     pattern = re.compile(r'</tr>', re.DOTALL | re.IGNORECASE)
     html_content = re.sub(pattern, '', html_content)
 
     pattern = re.compile(r'<td.*?>', re.DOTALL | re.IGNORECASE)
-    html_content = re.sub(pattern, '', html_content)
+    html_content = re.sub(pattern, '\n', html_content)
 
     pattern = re.compile(r'</td>', re.DOTALL | re.IGNORECASE)
     html_content = re.sub(pattern, '', html_content)
@@ -174,6 +177,7 @@ def clean_html(file_content):
     cleaned = clean_lines(cleaned)
 
     cleaned = strip_all_html_tags(cleaned)
+    cleaned = remove_numeric_entities(cleaned)
     return cleaned
 
 def print_clean_txt(html_content):

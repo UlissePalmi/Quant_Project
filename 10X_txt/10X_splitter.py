@@ -3,8 +3,8 @@ from typing import List, Dict, Tuple, Optional
 from itertools import islice
 import re
 
-ticker = "A"
-filings = "0000891618-02-000185"
+ticker = "TSLA"
+filings = "0000950170-22-000796"
 folderpath = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
 filepath = folderpath / "clean-full-submission.txt"
 TOKENS = ("PART", "ITEM", "CONSOLIDATED", "NOTES", "SIGNATURES", "EXHIBIT")
@@ -143,6 +143,13 @@ if __name__ == "__main__":
     p = Path(filepath)
     text = p.read_text(encoding="utf-8", errors="ignore")
     index = extract_index_lines(text)
+
+
+    print(f"\ntable of content: ")
+    for row in index:
+        print(f"{row['line_no']:>6}  {row['kind']}  {row['text']}")
+
+
     ok, (table_content, part2, exhibits_list), (i1, i2) = split_three_by_two_signatures(index)
 
     if not ok:
@@ -168,8 +175,6 @@ if __name__ == "__main__":
 
         print(final_split)
 
-        txt_content = "prova"
-
         page_list = [i['line_no'] for i in final_split]
         page_list.append(11849)
 
@@ -182,26 +187,3 @@ if __name__ == "__main__":
             full_path = folderpath / filename
             with open(full_path, "w", encoding='utf-8') as f:
                 f.write(chunk)
-
-
-'''
-        print(f"\nexhibits table of content: ")
-        for row in exhibits_table_content:
-            print(f"{row['line_no']:>6}  {row['kind']}  {row['text']}")
-
-        print(f"\nrest: ")
-        for row in rest:
-            print(f"{row['line_no']:>6}  {row['kind']}  {row['text']}")
-
-        print(f"\nexhibits list: ")
-        for row in exhibits_list:
-            print(f"{row['line_no']:>6}  {row['kind']}  {row['text']}")
-'''
-        
-'''
-1) controlla che in table of content ci siano tutti i numeri e controlla dove si trovano gli financial statemnts
-2) controlla rest
-	numero di loop
-	elimina extra
-	crea file con lista di item
-'''
