@@ -11,6 +11,64 @@ def remove_xbrl_xml_blocks(html_content): # Removes entire XBRL/XML blocks and i
     clean_content = re.sub(pattern_tags, '', clean_content)
     return clean_content
 
+def _ends_with_tag(piece: str) -> bool:
+    """
+    True if `piece` (a single segment) ends with an HTML-like tag: ...>
+    We only look at this segment's tail; that's enough because the
+    'current line' end always equals the last appended segment's end.
+    """
+    s = piece.rstrip()
+    if not s.endswith(">"):
+        return False
+    # look back a little to find a '<' before the closing '>'
+    tail = s[-300:] if len(s) > 300 else s
+    i = tail.rfind("<")
+    return i != -1 and "\n" not in tail[i:]
+
+def _starts_with_tag(line: str) -> bool:
+    """True if the (next) line starts with a tag after leading spaces: <..."""
+    return line.lstrip().startswith("<")
+
+def soft_unwrap_html_lines(html: str) -> str:
+    """
+    Replace a newline with a single space *only when*:
+      - the current (combined) line does NOT end with an HTML tag, and
+      - the next line does NOT start with an HTML tag.
+    Preserves all other newlines and tags.
+    """
+    lines = html.splitlines()
+    if not lines:
+        return html
+
+    out_lines = []
+
+    # We'll build the current logical line as a list of segments
+    parts = [lines[0].rstrip("\r")]
+    cur_ends_with_tag = _ends_with_tag(parts[-1])
+
+    for raw_next in lines[1:]:
+        nxt = raw_next.rstrip("\r")
+        next_starts_tag = _starts_with_tag(nxt)
+
+        if (not cur_ends_with_tag) and (not next_starts_tag):
+            # join: ensure exactly one space at the boundary
+            if parts[-1] and parts[-1].endswith((" ", "\t")):
+                parts[-1] = parts[-1].rstrip()
+            parts.append(" ")
+            parts.append(nxt.lstrip())
+            # after joining, the 'current line' ends as nxt ends
+            cur_ends_with_tag = _ends_with_tag(nxt)
+        else:
+            # flush current logical line
+            out_lines.append("".join(parts))
+            # start a new logical line
+            parts = [nxt]
+            cur_ends_with_tag = _ends_with_tag(nxt)
+
+    # flush the last line
+    out_lines.append("".join(parts))
+    return "\n".join(out_lines)
+
 def remove_head_with_regex(html_content): # Uses regex to remove the <head> section.
     # The re.DOTALL flag is crucial to match across multiple lines
     pattern = re.compile(r'<head>.*?</head>', re.DOTALL | re.IGNORECASE)
@@ -158,7 +216,8 @@ def get_content_before_sequence(html_content):
     return match.group() if match else html_content
 
 def clean_html(file_content):
-    cleaned = get_from_sec_document(file_content)
+    cleaned = soft_unwrap_html_lines(file_content)
+    cleaned = get_from_sec_document(cleaned)
     
     cleaned = get_content_before_sequence(cleaned)                     # cuts after <SEQUENCE>2
     cleaned = remove_head_with_regex(cleaned)
