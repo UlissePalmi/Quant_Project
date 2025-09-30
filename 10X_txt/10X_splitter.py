@@ -4,12 +4,11 @@ from itertools import islice
 import re
 
 ticker = "ADBE"
-filings = "0000796343-09-000007"
+filings = "0000796343-12-000003"
 folderpath = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
 filepath = folderpath / "clean-full-submission.txt"
 TOKENS = ("ITEM")
 
-items_list = ["1", "1A", "1B", "1C", "2", "3", "4", "5", "6", "7", "7A", "8"]
 
 def _normalize_ws(s: str) -> str:
     s = s.replace("\xa0", " ").replace("\u2007", " ").replace("\u202f", " ")
@@ -21,10 +20,10 @@ def before_dot(s: str) -> str:
     i = s.find('.')
     return s[:i] if i != -1 else s
 
-def extract_index_lines(p):                                                                                     #  Filepath -> List[Dict] {'line_no': x, 'kind': 'y', 'text': 'z'}
+def extract_index_lines(p):                                                                                     # Filepath -> List[Dict] {'line_no': x, 'kind': 'y', 'text': 'z'}
     text = p.read_text(encoding="utf-8", errors="ignore")
     out = []
-    HEAD_RE = re.compile(r'^\s*(?P<kind>item)\b(?P<rest>.*)$', re.IGNORECASE)    # regex to find lines to split
+    HEAD_RE = re.compile(r'^\s*(?P<kind>item)\b(?P<rest>.*)$', re.IGNORECASE)                                   # Regex to find lines to split
 
     for i, raw in enumerate(text.splitlines(), start=1):
         line = _normalize_ws(raw)
@@ -53,6 +52,21 @@ def extract_index_lines(p):                                                     
         last = key
     return deduped
 
+def digits_only_list(item_dict):
+    items = [i.get("item_n") for i in item_dict]
+
+    out_list = []
+    for items in item_dict:    
+        out = []
+        for x in items.get("item_n"):
+            s = str(x)
+            digits = "".join(ch for ch in s if ch.isdigit())
+            print(digits)
+            if digits:                                                  # join the numberss!!!!!
+                out.append(int(digits))
+        out_list.append(out)
+    return out_list
+
 def table_content_starter(item_list):
     i = 0
     
@@ -65,6 +79,8 @@ def table_content_starter(item_list):
             return table_of_content, rest
 
 def table_content_finisher(table_content):
+    items_list = ["1", "1A", "1B", "1C", "2", "3", "4", "5", "6", "7", "7A", "8"]
+
     table_content_list = []                                                                         # Create table of content
     for i in table_content:
         table_content_list.append(i.get("item_n"))
@@ -128,20 +144,19 @@ def print_items(filepath, final_split):
 def complete_split(filepath):
     p = Path(filepath)                                                                              
     main_lines = extract_index_lines(p)                                                             # Extracts main lines  
-
     item_dict = get_items_dict(main_lines)                                                          # Makes list of dictionary with all items
 
+    # Find highest number
+    
+    
+    out_list = digits_only_list(item_dict)
+    print(out_list)
+
     table_content, rest_list = table_content_starter(item_dict)                                     # Splits in 2 lists of dictionaries: table of content and body
-
     table_content_list = table_content_finisher(table_content)                                      # Creates a list with all the number of items
+    list_lines = create_index(table_content_list, rest_list)                                        # Creates first list
+    final_split = final_list(list_lines)                                                            # Identifies the list of dict that covers the most lines (aka actual items)
 
-    return table_content_list, rest_list
+    return final_split
 
-
-table_content_list, rest_list = complete_split(filepath)
-
-list_lines = create_index(table_content_list, rest_list)    # Creates first list
-
-final_split = final_list(list_lines)
-
-print_items(filepath, final_split)
+print_items(filepath, complete_split(filepath))
