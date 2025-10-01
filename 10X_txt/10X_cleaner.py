@@ -4,7 +4,7 @@ from pathlib import Path
 import sec_txt_cleaning as cr
 from sec_edgar_downloader import Downloader
 
-ticker = "ADBE"
+ticker = "A"
 output_filename = "clean-full-submission.txt"
 
 folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"

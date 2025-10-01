@@ -215,6 +215,34 @@ def get_content_before_sequence(html_content):
     match = re.search(pattern, html_content)
     return match.group() if match else html_content
 
+def break_on_item_heads(text: str) -> str:
+    """
+    Ensure each 'Item <num><opt letter>.' starts on its own line.
+    Example heads: 'Item 1.', 'Item 12.', 'Item 1A.', 'Item 12b .'
+    """
+    _HEAD_DETECT = re.compile(r'\s*item\b\s*\d+[A-Za-z]?\s*\.', re.IGNORECASE)
+    
+    out = []
+    last = 0
+
+    for m in _HEAD_DETECT.finditer(text):
+        start = m.start()
+
+        # If we're not at the very beginning and not already at a newline,
+        # insert a newline before this head.
+        if start > 0 and text[start-1] != '\n':
+            out.append(text[last:start])
+            out.append('\n')
+            last = start
+
+    out.append(text[last:])
+
+    # Optional tidy-up: remove leading spaces at the start of lines we just created
+    # (keeps any indentation that was already after a real newline)
+    s = ''.join(out)                     # <-- join the list!
+    return re.sub(r'[ \t]+\n', '\n', s)  # tidy spaces before newlines
+
+
 def clean_html(file_content):
     cleaned = soft_unwrap_html_lines(file_content)
     cleaned = get_from_sec_document(cleaned)
@@ -237,6 +265,7 @@ def clean_html(file_content):
 
     cleaned = strip_all_html_tags(cleaned)
     cleaned = remove_numeric_entities(cleaned)
+    cleaned = break_on_item_heads(cleaned)
     return cleaned
 
 def print_clean_txt(html_content):
