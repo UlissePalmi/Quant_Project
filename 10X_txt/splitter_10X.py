@@ -9,6 +9,7 @@ filings = "0000004977-22-000058"
 folderpath = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
 folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"
 filepath = folderpath / "clean-full-submission.txt"
+tickerlist = Path("data") / "html" / "sec-edgar-filings"
 TOKENS = ("ITEM")
 
 def _normalize_ws(s: str) -> str:
@@ -149,9 +150,9 @@ def print_items(filepath, final_split, p):
             f.write(chunk)
     print("okkkkk")
 
-def version2(filepath):
-    p = Path(filepath)                                                                              
-    main_lines = extract_index_lines(p)                                                             # Extracts main lines 
+def version2(filepath, p):
+    pat = Path(filepath)                                                                              
+    main_lines = extract_index_lines(pat)                                                             # Extracts main lines 
     item_dict = get_items_dict(main_lines)
     out_num, n_rounds = digits_only_list(item_dict)
 
@@ -161,14 +162,22 @@ def version2(filepath):
     print_items(filepath, final_split, p)
     time.sleep(0.5)
     
-'''
-for p in folders_path.iterdir():
-    filepath = p / "clean-full-submission.txt"
-    try:
-        version2(filepath)
-    except:
-        print("failed")
-'''
+
+
+for s in tickerlist.iterdir():
+    #print(s)
+    if s.is_dir():
+        ticker = s.name
+        folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"
+        print(ticker)
+        for p in folders_path.iterdir():
+            filepath = p / "clean-full-submission.txt"
+            #print(p)
+            try:
+                version2(filepath, p)
+            except:
+                print("failed")
+
 
 
 
