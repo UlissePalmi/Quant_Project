@@ -4,8 +4,8 @@ from itertools import islice
 import re
 import time
 
-ticker = "AAPL"
-filings = "0001193125-13-416534"
+ticker = "AFL"
+filings = "0000004977-22-000058"
 folderpath = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
 folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"
 filepath = folderpath / "clean-full-submission.txt"
@@ -50,7 +50,7 @@ def extract_index_lines(p):                                                     
         if key != last:
             deduped.append(row)
         last = key
-    print(deduped)
+    #print(deduped)
     return deduped
 
 def digits_only_list(item_dict):
@@ -62,17 +62,17 @@ def digits_only_list(item_dict):
         digits = "".join(ch for ch in s if ch.isdigit() and ch)
         out.append(digits)
     out_num = [int(i) for i in out]
-    print(f"out_num: {out_num}")
+    #print(f"out_num: {out_num}")
     while max(out_num) > 20:
         out_num.remove(max(out_num))
-        print(out_num)
+        #print(out_num)
     max_num = max(out_num)
     out_num = [int(i) for i in out]
     
-    print(max_num)
+    #print(max_num)
     rounds = [i for i in out_num if i==max_num]
     rounds2 = [i for i in out_num if i==max_num-1]
-    print(rounds, rounds2)
+    #print(rounds, rounds2)
     if rounds > rounds2:
         rounds = rounds2
     return out_num, len(rounds)
@@ -81,7 +81,7 @@ def table_content_builder(item_dict):
     i = 0
     out_num, n_rounds = digits_only_list(item_dict)
     items_list = ["1", "1A", "1B", "1C", "2", "3", "4", "5", "6", "7", "7A", "8"]
-    print(f"n_rounds: {n_rounds}")
+    #print(f"n_rounds: {n_rounds}")
     letters_tuple = ("","A","B","C")
     for n in range(int(items_list[-1])+1,max(out_num)+1):
         n = str(n)
@@ -92,8 +92,8 @@ def table_content_builder(item_dict):
 
 def make_item_loops(item_list, max_item, n_rounds, item_dict):
     list_lines = []
-    print(item_dict)
-    print(f"item_list: {item_list}")
+    #print(item_dict)
+    #print(f"item_list: {item_list}")
     last_ele = 0
     boh = 0
     while boh != n_rounds:
@@ -105,9 +105,9 @@ def make_item_loops(item_list, max_item, n_rounds, item_dict):
                     last_ele = r['line_no']
                     break
         boh = boh + 1
-        print(f"lines: {lines}")
+        #print(f"lines: {lines}")
         list_lines.append(lines)
-    print(list_lines)
+    #print(list_lines)
     return list_lines
 
 def get_items_dict(main_lines):
@@ -122,16 +122,16 @@ def get_items_dict(main_lines):
 
 def final_list(list_lines):
     diff = 0
-    print(len(list_lines))
+    #print(len(list_lines))
     for i in range(len(list_lines)):
         n = list_lines[i][-1]['line_no'] - list_lines[i][1]['line_no']
-        print(n)
+        #print(n)
         if n > diff:
             num = i
             diff = n
     return list_lines[num]
 
-def print_items(filepath, final_split):
+def print_items(filepath, final_split, p):
     page_list = [i['line_no'] for i in final_split]
     page_list.append(11849)
 
@@ -141,7 +141,9 @@ def print_items(filepath, final_split):
             lines = list(islice(f, start - 1, end-1))
         chunk = "".join(lines)
         filename = f"item{i['item_n']}.txt"
-        full_path = folderpath / filename
+
+        full_path = p / filename
+        #print(full_path)
         #folderpath
         with open(full_path, "w", encoding='utf-8') as f:
             f.write(chunk)
@@ -156,18 +158,17 @@ def version2(filepath):
     item_list, rest_list = table_content_builder(item_dict)
     list_lines = make_item_loops(item_list, max(out_num), n_rounds, item_dict)
     final_split = final_list(list_lines)                                                        # Identifies the list of dict that covers the most lines (aka actual items)
-    print_items(filepath, final_split)
+    print_items(filepath, final_split, p)
     time.sleep(0.5)
     
-
-#for p in folders_path.iterdir():
-#    print(p)
-#    filepath = p / "clean-full-submission.txt"
-#    try:
-version2(filepath)
-#    except:
-#        print("failed")
-
+'''
+for p in folders_path.iterdir():
+    filepath = p / "clean-full-submission.txt"
+    try:
+        version2(filepath)
+    except:
+        print("failed")
+'''
 
 
 
