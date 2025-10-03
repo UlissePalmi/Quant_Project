@@ -1,21 +1,32 @@
 import re
 from pathlib import Path
 import sys
+import make_comps as mc
+import csv
+from nltk.sentiment import SentimentIntensityAnalyzer
+import nltk
 
-
-ticker = "ZTS"
-filings = "0001555280-25-000102"
-filings2 = "0001555280-24-000143"
-file = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
-file2 = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
-
-
+nltk.download("vader_lexicon", quiet=True)
+_sia = SentimentIntensityAnalyzer()
 
 def tokenize(text: str):
     _WORD_RE = re.compile(r"[A-Za-z']+")
     return _WORD_RE.findall(text.lower())
 
-def levenshtein_tokens(a_tokens, b_tokens):
+def mean_vader_compound(words) -> float:
+    """
+    Average VADER 'compound' score over a list of single-word strings.
+    Returns 0.0 for an empty list.
+    """
+    compounds = []
+    for w in words:
+        w = (w or "").strip()
+        scores = {"compound": 0.0} if not w else _sia.polarity_scores(w)
+        compounds.append(scores["compound"])
+    return sum(compounds) / len(compounds)
+
+
+def levenshtein_tokens(a_tokens, b_tokens, ticker):
     # Classic Wagner–Fischer with two rows
     m, n = len(a_tokens), len(b_tokens)
     if n > m:
@@ -39,24 +50,67 @@ def levenshtein_tokens(a_tokens, b_tokens):
             done_cells = (i - 1) * n + j
             total_cells = m * n
             pct = (done_cells / total_cells) * 100 if total_cells else 100.0
-            sys.stdout.write(f"\rProgress: {pct:6.2f}%  (row {i}/{m}, col {j}/{n})")
+            sys.stdout.write(f"\rTicker: {ticker} Progress: {pct:6.2f}%  (row {i}/{m}, col {j}/{n})")
             sys.stdout.flush()
-    # after both loops finish:
-        print()
-        prev = cur
-    return prev[n]
 
-def min_edit_similarity(text_a: str, text_b: str):
+        b_set = set(b_tokens)
+        new_words = [t for t in a_tokens if t not in b_set]
+    # after both loops finish:
+        prev = cur
+    return prev[n], new_words
+
+def min_edit_similarity(text_a: str, text_b: str, dict, ticker):
     A, B = tokenize(text_a), tokenize(text_b)
-    dist = levenshtein_tokens(A, B)
+    dist, new_words = levenshtein_tokens(A, B, ticker)
     denom = len(A) + len(B)
     sim = 1.0 - (dist / denom if denom else 0.0)
-    return {"distance": dist, "similarity": sim, "len_a": len(A), "len_b": len(B)}
+    return {"ticker": ticker, "date_a": dict["date1"], "date_b": dict["date2"], "distance": dist, "similarity": sim, "len_a": len(A), "len_b": len(B), "sentiment": mean_vader_compound(new_words)}
+
+
+folders_path = Path("data") / "html" / "sec-edgar-filings"
+
+
+ticker = "INTC"
+
+ordered_data = mc.prepare_data(ticker)
 
 model = []
-text = file.read_text(encoding="utf-8", errors="ignore")
-text2 = file2.read_text(encoding="utf-8", errors="ignore")
+for comps in ordered_data:
+    filings = comps["filing1"]
+    filings2 = comps["filing2"]
+    file = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
+    file2 = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
+    text = file.read_text(encoding="utf-8", errors="ignore")
+    text2 = file2.read_text(encoding="utf-8", errors="ignore")
+    model.append(min_edit_similarity(text, text2, comps, ticker))
 
-model.append(min_edit_similarity(text, text2))
+'''
+fieldnames = model[0].keys()
+with open("similarity_data.csv", "w", newline="", encoding="utf-8") as f:
+    writer = csv.DictWriter(f, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(model)
+'''
 
+
+
+
+for ticker in folders_path.iterdir():
+    ticker = ticker.name
+    ordered_data = mc.prepare_data(ticker)
+    model = []
+    for comps in ordered_data:
+        filings = comps["filing1"]
+        filings2 = comps["filing2"]
+        file = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
+        file2 = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
+        text = file.read_text(encoding="utf-8", errors="ignore")
+        text2 = file2.read_text(encoding="utf-8", errors="ignore")
+        model.append(min_edit_similarity(text, text2, comps, ticker))
 print(model)
+
+fieldnames = ["ticker", "date_a", "date_b", "distance", "similarity", "len_a", "len_b"]
+with open("similarity_data.csv", "w", newline="", encoding="utf-8") as f:
+    writer = csv.DictWriter(f, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(model)
