@@ -56,6 +56,7 @@ def levenshtein_tokens(a_tokens, b_tokens, ticker):
         b_set = set(b_tokens)
         new_words = [t for t in a_tokens if t not in b_set]
     # after both loops finish:
+        print()
         prev = cur
     return prev[n], new_words
 
@@ -69,11 +70,10 @@ def min_edit_similarity(text_a: str, text_b: str, dict, ticker):
 
 folders_path = Path("data") / "html" / "sec-edgar-filings"
 
-
+'''
 ticker = "INTC"
 
 ordered_data = mc.prepare_data(ticker)
-
 model = []
 for comps in ordered_data:
     filings = comps["filing1"]
@@ -84,7 +84,7 @@ for comps in ordered_data:
     text2 = file2.read_text(encoding="utf-8", errors="ignore")
     model.append(min_edit_similarity(text, text2, comps, ticker))
 
-'''
+
 fieldnames = model[0].keys()
 with open("similarity_data.csv", "w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -92,25 +92,30 @@ with open("similarity_data.csv", "w", newline="", encoding="utf-8") as f:
     writer.writerows(model)
 '''
 
+fieldnames = ["ticker", "date_a", "date_b", "distance", "similarity", "len_a", "len_b", "sentiment"]
+out_path = Path("similarity_data.csv")
 
-
-
-for ticker in folders_path.iterdir():
-    ticker = ticker.name
-    ordered_data = mc.prepare_data(ticker)
-    model = []
-    for comps in ordered_data:
-        filings = comps["filing1"]
-        filings2 = comps["filing2"]
-        file = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
-        file2 = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
-        text = file.read_text(encoding="utf-8", errors="ignore")
-        text2 = file2.read_text(encoding="utf-8", errors="ignore")
-        model.append(min_edit_similarity(text, text2, comps, ticker))
-print(model)
-
-fieldnames = ["ticker", "date_a", "date_b", "distance", "similarity", "len_a", "len_b"]
-with open("similarity_data.csv", "w", newline="", encoding="utf-8") as f:
+# WRITE a fresh file each run. If you want to append across runs, see the note below.
+with out_path.open("w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=fieldnames)
     writer.writeheader()
-    writer.writerows(model)
+
+    for ticker in folders_path.iterdir():
+        ticker = ticker.name
+        ordered_data = mc.prepare_data(ticker)
+        model = []
+
+        for comps in ordered_data:
+            filings = comps["filing1"]
+            filings2 = comps["filing2"]
+
+            file = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
+            file2 = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
+            
+            text = file.read_text(encoding="utf-8", errors="ignore")
+            text2 = file2.read_text(encoding="utf-8", errors="ignore")
+            
+            res = min_edit_similarity(text, text2, comps, ticker)
+            print(res)
+            
+            writer.writerow(res)

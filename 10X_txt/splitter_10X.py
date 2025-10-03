@@ -51,7 +51,6 @@ def extract_index_lines(p):                                                     
         if key != last:
             deduped.append(row)
         last = key
-    #print(deduped)
     return deduped
 
 def digits_only_list(item_dict):
@@ -63,17 +62,12 @@ def digits_only_list(item_dict):
         digits = "".join(ch for ch in s if ch.isdigit() and ch)
         out.append(digits)
     out_num = [int(i) for i in out]
-    #print(f"out_num: {out_num}")
     while max(out_num) > 20:
         out_num.remove(max(out_num))
-        #print(out_num)
     max_num = max(out_num)
     out_num = [int(i) for i in out]
-    
-    #print(max_num)
     rounds = [i for i in out_num if i==max_num]
     rounds2 = [i for i in out_num if i==max_num-1]
-    #print(rounds, rounds2)
     if rounds > rounds2:
         rounds = rounds2
     return out_num, len(rounds)
@@ -82,7 +76,6 @@ def table_content_builder(item_dict):
     i = 0
     out_num, n_rounds = digits_only_list(item_dict)
     items_list = ["1", "1A", "1B", "1C", "2", "3", "4", "5", "6", "7", "7A", "8"]
-    #print(f"n_rounds: {n_rounds}")
     letters_tuple = ("","A","B","C")
     for n in range(int(items_list[-1])+1,max(out_num)+1):
         n = str(n)

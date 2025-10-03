@@ -2,13 +2,13 @@ from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from itertools import islice
 import re
+import time
 
 ticker = "ADBE"
-filings = "0000796343-12-000003"
+filings = "0000796343-21-000004"
 folderpath = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
 filepath = folderpath / "clean-full-submission.txt"
 TOKENS = ("ITEM")
-
 
 def _normalize_ws(s: str) -> str:
     s = s.replace("\xa0", " ").replace("\u2007", " ").replace("\u202f", " ")
@@ -33,7 +33,6 @@ def extract_index_lines(p):                                                     
         m = HEAD_RE.match(line)
         if not m:
             continue
-
         label = m.group('kind') + m.group('rest')
         label = _normalize_ws(label)
         out.append({
@@ -53,60 +52,54 @@ def extract_index_lines(p):                                                     
     return deduped
 
 def digits_only_list(item_dict):
-    items = [i.get("item_n") for i in item_dict]
+    out = []
+    for items in item_dict:
+        if not str(items.get('item_n', ''))[:1].isdigit():
+            continue
+        s = str(items.get("item_n"))
+        digits = "".join(ch for ch in s if ch.isdigit() and ch)
+        out.append(digits)
+    out_num = [int(i) for i in out]
+    while max(out_num) > 20:
+        out_num.remove(max(out_num))
+    max_num = max(out_num)
+    out_num = [int(i) for i in out]
+    rounds = [i for i in out_num if i==max_num]
+    rounds2 = [i for i in out_num if i==max_num-1]
+    if rounds > rounds2:
+        rounds = rounds2
+    return out_num, len(rounds)
 
-    out_list = []
-    for items in item_dict:    
-        out = []
-        for x in items.get("item_n"):
-            s = str(x)
-            digits = "".join(ch for ch in s if ch.isdigit())
-            print(digits)
-            if digits:                                                  # join the numberss!!!!!
-                out.append(int(digits))
-        out_list.append(out)
-    return out_list
-
-def table_content_starter(item_list):
+def table_content_builder(item_dict):
     i = 0
-    
-    for n, item in enumerate(item_list):
-        if item['item_n'] == "1":
-            i = i + 1
-        if i == 2:
-            table_of_content = item_list[:n]
-            rest = item_list[n:]
-            return table_of_content, rest
-
-def table_content_finisher(table_content):
+    out_num, n_rounds = digits_only_list(item_dict)
     items_list = ["1", "1A", "1B", "1C", "2", "3", "4", "5", "6", "7", "7A", "8"]
+    letters_tuple = ("","A","B","C")
+    for n in range(int(items_list[-1])+1,max(out_num)+1):
+        n = str(n)
+        for l in letters_tuple:
+            items_list.append(n + l)
+    
+    return items_list, item_dict
 
-    table_content_list = []                                                                         # Create table of content
-    for i in table_content:
-        table_content_list.append(i.get("item_n"))
-
-    # Merge the table of contents
-    items_list.extend(table_content_list[table_content_list.index(items_list[-1])+1:])
-    return items_list
-
-def create_index(table_content_list, rest_list):
+def make_item_loops(item_list, max_item, n_rounds, item_dict):
     list_lines = []
-    while any("1" in str(d.get("item_n")) for d in rest_list):
+    #print(item_dict)
+    #print(f"item_list: {item_list}")
+    last_ele = 0
+    boh = 0
+    while boh != n_rounds:
         lines = []
-        last_ele = 0
-        for t in table_content_list:
-            for r in rest_list:
+        for t in item_list:
+            for r in item_dict:
                 if t == r.get('item_n') and r.get('line_no') > last_ele:
                     lines.append(r)
                     last_ele = r['line_no']
                     break
+        boh = boh + 1
+        #print(f"lines: {lines}")
         list_lines.append(lines)
-        #print(list_lines)
-        new_rest_list = []
-        for l in rest_list:
-            if l['line_no'] > last_ele:
-                new_rest_list.append(l)
-        rest_list = new_rest_list
+    #print(list_lines)
     return list_lines
 
 def get_items_dict(main_lines):
@@ -121,13 +114,16 @@ def get_items_dict(main_lines):
 
 def final_list(list_lines):
     diff = 0
+    #print(len(list_lines))
     for i in range(len(list_lines)):
         n = list_lines[i][-1]['line_no'] - list_lines[i][1]['line_no']
+        #print(n)
         if n > diff:
             num = i
+            diff = n
     return list_lines[num]
 
-def print_items(filepath, final_split):
+def print_items(filepath, final_split, p):
     page_list = [i['line_no'] for i in final_split]
     page_list.append(11849)
 
@@ -137,26 +133,36 @@ def print_items(filepath, final_split):
             lines = list(islice(f, start - 1, end-1))
         chunk = "".join(lines)
         filename = f"item{i['item_n']}.txt"
-        full_path = folderpath / filename
+
+        full_path = p / filename
+        #print(full_path)
+        #folderpath
         with open(full_path, "w", encoding='utf-8') as f:
             f.write(chunk)
+    print("okkkkk")
 
-def complete_split(filepath):
-    p = Path(filepath)                                                                              
-    main_lines = extract_index_lines(p)                                                             # Extracts main lines  
-    item_dict = get_items_dict(main_lines)                                                          # Makes list of dictionary with all items
+def version2(filepath, p):
+    pat = Path(filepath)                                                                              
+    main_lines = extract_index_lines(pat)                                                             # Extracts main lines 
+    item_dict = get_items_dict(main_lines)
 
-    # Find highest number
+    out_num, n_rounds = digits_only_list(item_dict)
+    print(out_num)
+    item_list, rest_list = table_content_builder(item_dict)
+    list_lines = make_item_loops(item_list, max(out_num), n_rounds, item_dict)
+    final_split = final_list(list_lines)                                                        # Identifies the list of dict that covers the most lines (aka actual items)
+    print_items(filepath, final_split, p)
+    time.sleep(0.5)
     
-    
-    out_list = digits_only_list(item_dict)
-    print(out_list)
 
-    table_content, rest_list = table_content_starter(item_dict)                                     # Splits in 2 lists of dictionaries: table of content and body
-    table_content_list = table_content_finisher(table_content)                                      # Creates a list with all the number of items
-    list_lines = create_index(table_content_list, rest_list)                                        # Creates first list
-    final_split = final_list(list_lines)                                                            # Identifies the list of dict that covers the most lines (aka actual items)
 
-    return final_split
+folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
+filepath = folders_path / "clean-full-submission.txt"
+#print(p)
+try:
+    version2(filepath, folders_path)
+except:
+    print("failed")
 
-print_items(filepath, complete_split(filepath))
+
+

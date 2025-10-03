@@ -1,0 +1,2 @@
+ticker,date_a,date_b,distance,similarity,len_a,len_b,sentiment
+A,2024-12-20,2023-12-20,1442,0.920951650038373,9328,8914,0.01604
