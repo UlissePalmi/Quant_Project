@@ -92,6 +92,15 @@ with open("similarity_data.csv", "w", newline="", encoding="utf-8") as f:
     writer.writerows(model)
 '''
 
+path = Path("ticker_list.csv")
+with path.open(newline="", encoding="utf-8") as f:
+    reader = csv.DictReader(f)
+    tickers = [row["ticker"].strip() for row in reader if row.get("ticker") and row["ticker"].strip()]
+
+print(tickers)
+
+
+
 fieldnames = ["ticker", "date_a", "date_b", "distance", "similarity", "len_a", "len_b", "sentiment"]
 out_path = Path("similarity_data.csv")
 
@@ -100,8 +109,7 @@ with out_path.open("w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=fieldnames)
     writer.writeheader()
 
-    for ticker in folders_path.iterdir():
-        ticker = ticker.name
+    for ticker in tickers:
         ordered_data = mc.prepare_data(ticker)
         model = []
 
@@ -115,7 +123,9 @@ with out_path.open("w", newline="", encoding="utf-8") as f:
             text = file.read_text(encoding="utf-8", errors="ignore")
             text2 = file2.read_text(encoding="utf-8", errors="ignore")
             
-            res = min_edit_similarity(text, text2, comps, ticker)
-            print(res)
-            
+            try:
+                res = min_edit_similarity(text, text2, comps, ticker)
+                print(res)
+            except:
+                print("Skipped")    
             writer.writerow(res)
