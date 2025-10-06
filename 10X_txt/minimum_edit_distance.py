@@ -110,22 +110,24 @@ with out_path.open("w", newline="", encoding="utf-8") as f:
     writer.writeheader()
 
     for ticker in tickers:
-        ordered_data = mc.prepare_data(ticker)
-        model = []
+        try:
+            ordered_data = mc.prepare_data(ticker)
+            model = []
 
-        for comps in ordered_data:
-            filings = comps["filing1"]
-            filings2 = comps["filing2"]
+            for comps in ordered_data:
+                filings = comps["filing1"]
+                filings2 = comps["filing2"]
 
-            file = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
-            file2 = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
-            
-            text = file.read_text(encoding="utf-8", errors="ignore")
-            text2 = file2.read_text(encoding="utf-8", errors="ignore")
-            
-            try:
+                file = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
+                file2 = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
+                
+                text = file.read_text(encoding="utf-8", errors="ignore")
+                text2 = file2.read_text(encoding="utf-8", errors="ignore")
+                
+
                 res = min_edit_similarity(text, text2, comps, ticker)
                 print(res)
-            except:
-                print("Skipped")    
-            writer.writerow(res)
+            
+                writer.writerow(res)
+        except:
+            print("Skipped")
