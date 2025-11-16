@@ -3,7 +3,6 @@ from pathlib import Path
 ticker = "ZTS"
 folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"
 
-
 def check_date(folder, filing):
     file = folder / "clean-full-submission.txt"
     with open(file, "r", encoding="utf-8", errors="replace") as f:
@@ -61,3 +60,5 @@ def prepare_data(ticker):
     ordered_filings = order_filings(date_data)
     comps_list = make_comps(ordered_filings, date_data)                                 # List of dictionary
     return comps_list
+
+

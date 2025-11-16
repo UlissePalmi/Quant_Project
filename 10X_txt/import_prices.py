@@ -7,7 +7,7 @@ def price_on_or_after(series: pd.Series, when: pd.Timestamp) -> float:
     i = series.index.searchsorted(when, side="left")
     return float(series.iloc[i]) if i < len(series) else np.nan
 
-data_df = pd.read_csv("Final Dataset.csv")
+data_df = pd.read_csv("similarity_data.csv")
 data_df["date_a"] = pd.to_datetime(data_df["date_a"])
 
 data_df["start_anchor"] = (data_df["date_a"] + pd.offsets.MonthBegin(1)).dt.normalize()

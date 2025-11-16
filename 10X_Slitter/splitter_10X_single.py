@@ -4,8 +4,8 @@ from itertools import islice
 import re
 import time
 
-ticker = "ADBE"
-filings = "0000796343-21-000004"
+ticker = "ADI"
+filings = "0000006281-21-000294"
 folderpath = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
 filepath = folderpath / "clean-full-submission.txt"
 TOKENS = ("ITEM")
@@ -20,7 +20,7 @@ def before_dot(s: str) -> str:
     i = s.find('.')
     return s[:i] if i != -1 else s
 
-def extract_index_lines(p):                                                                                     # Filepath -> List[Dict] {'line_no': x, 'kind': 'y', 'text': 'z'}
+def item_dict_builder(p):                                                                                     # Filepath -> List[Dict] {'item_n': 'x', 'line_no': y}
     text = p.read_text(encoding="utf-8", errors="ignore")
     out = []
     HEAD_RE = re.compile(r'^\s*(?P<kind>item)\b(?P<rest>.*)$', re.IGNORECASE)                                   # Regex to find lines to split
@@ -29,23 +29,22 @@ def extract_index_lines(p):                                                     
         line = _normalize_ws(raw)
         if not line:
             continue
-
+        print(line)
         m = HEAD_RE.match(line)
         if not m:
             continue
-        label = m.group('kind') + m.group('rest')
-        label = _normalize_ws(label)
+        label = m.group('rest')
+
         out.append({
+            'item_n': before_dot(_normalize_ws(label).split()[0]),
             'line_no': i,
-            'kind': m.group('kind').capitalize(),
-            'text': label,
         })
 
     # dedupe consecutive duplicates
     deduped = []
     last = None
     for row in out:
-        key = (row['kind'], row['text'].lower())
+        key = row['item_n'].lower()
         if key != last:
             deduped.append(row)
         last = key
@@ -54,14 +53,18 @@ def extract_index_lines(p):                                                     
 def digits_only_list(item_dict):
     out = []
     for items in item_dict:
-        if not str(items.get('item_n', ''))[:1].isdigit():
-            continue
-        s = str(items.get("item_n"))
-        digits = "".join(ch for ch in s if ch.isdigit() and ch)
+        #print(str(items.get('item_n'))[:1])
+        #if not str(items.get('item_n'))[:1].isdigit():
+        #    continue
+        #s = str(items.get("item_n"))
+        digits = "".join(ch for ch in items.get("item_n") if ch.isdigit() and ch)
         out.append(digits)
     out_num = [int(i) for i in out]
+
+    # sometimes "Item 400" exists
     while max(out_num) > 20:
         out_num.remove(max(out_num))
+    
     max_num = max(out_num)
     out_num = [int(i) for i in out]
     rounds = [i for i in out_num if i==max_num]
@@ -102,16 +105,6 @@ def make_item_loops(item_list, max_item, n_rounds, item_dict):
     #print(list_lines)
     return list_lines
 
-def get_items_dict(main_lines):
-    item_list = [i for i in main_lines if i.get("kind") == "Item"]
-    list = []
-    for i in item_list:
-        list.append({
-            'item_n': before_dot(i.get("text").split()[1]),
-            'line_no': i.get('line_no')
-            })
-    return list
-
 def final_list(list_lines):
     diff = 0
     #print(len(list_lines))
@@ -142,9 +135,9 @@ def print_items(filepath, final_split, p):
     print("okkkkk")
 
 def version2(filepath, p):
-    pat = Path(filepath)                                                                              
-    main_lines = extract_index_lines(pat)                                                             # Extracts main lines 
-    item_dict = get_items_dict(main_lines)
+    path = Path(filepath)                                                                              
+    item_dict = item_dict_builder(path)                                                       # Make list of dict indicating all item n. and line n. for each item 
+    print(item_dict)
 
     out_num, n_rounds = digits_only_list(item_dict)
     print(out_num)
@@ -158,7 +151,7 @@ def version2(filepath, p):
 
 folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
 filepath = folders_path / "clean-full-submission.txt"
-#print(p)
+
 try:
     version2(filepath, folders_path)
 except:

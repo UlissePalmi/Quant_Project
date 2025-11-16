@@ -1,13 +1,9 @@
 from sec_edgar_downloader import Downloader
 from pathlib import Path
-import re
-import os
 import csv
 
 def download_from_edgar(t):
     dl = Downloader("MyCompanyName", "my.email@domain.com", "data/html")
-
-    #ticker = input("Inserire ticker: ")
     document = "10-K"
     try:
         dl.get(document, t, limit=40)
@@ -44,21 +40,14 @@ def read_tickers(csv_path: str) -> list[str]:
     return out
 
 not_found_ticker = []
-'''
-csv_path = Path.cwd() / "company_list.csv"
-ticker_list = read_tickers(csv_path)
 
-root = Path("data")/ "html" / "sec-edgar-filings"
-done_ticker = sorted([p.name for p in root.iterdir() if p.is_dir()])
+letter = input("Select List (L) or Enter Ticker (T)...").lower()
+while letter != 'l' and letter != 't':
+    letter = input("Invalid... enter L or T...").lower()
 
+if letter == 'l':
+    read_tickers("ticker_list.csv")
+else:
+    t = input("Enter ticker...").upper()
 
-
-for t in ticker_list:
-    if not t in done_ticker:
-        download_from_edgar(t)
-    else:
-        print(f"Ticker {t} is already downloaded\n")
-'''
-
-t = "A"
 download_from_edgar(t)
