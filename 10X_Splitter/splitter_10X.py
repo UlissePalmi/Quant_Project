@@ -1,11 +1,13 @@
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from itertools import islice
+import splitter_10X_single as sps
 import re
 import time
 
+# REMOVE THIS SECTION
 ticker = "AFL"
-filings = "0000004977-22-000058"
+filings = "0000916641-02-000388"
 folderpath = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
 folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"
 filepath = folderpath / "clean-full-submission.txt"
@@ -167,7 +169,7 @@ for s in tickerlist.iterdir():
             filepath = p / "clean-full-submission.txt"
             #print(p)
             try:
-                version2(filepath, p)
+                sps.version2(filepath, p)
             except:
                 print("failed")
 

@@ -4,8 +4,8 @@ from itertools import islice
 import re
 import time
 
-ticker = "ADI"
-filings = "0000006281-21-000294"
+ticker = "D"
+filings = "0000916641-02-000388"
 folderpath = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
 filepath = folderpath / "clean-full-submission.txt"
 TOKENS = ("ITEM")
@@ -29,9 +29,8 @@ def item_dict_builder(p):                                                       
         line = _normalize_ws(raw)
         if not line:
             continue
-        print(line)
         m = HEAD_RE.match(line)
-        if not m:
+        if not m or not m.group('rest'):
             continue
         label = m.group('rest')
 
