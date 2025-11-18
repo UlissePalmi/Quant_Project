@@ -4,8 +4,8 @@ from itertools import islice
 import re
 import time
 
-ticker = "D"
-filings = "0000916641-02-000388"
+ticker = "0000104599"
+filings = "0001193125-08-093063"
 folderpath = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
 filepath = folderpath / "clean-full-submission.txt"
 TOKENS = ("ITEM")

@@ -6,7 +6,7 @@ def download_from_edgar(t):
     dl = Downloader("MyCompanyName", "my.email@domain.com", "data/html")
     document = "10-K"
     try:
-        dl.get(document, t, limit=40)
+        dl.get(document, t, limit=100)
     except ValueError:
         print(f"Ticker {t} not found\n")
         not_found_ticker.append(t)

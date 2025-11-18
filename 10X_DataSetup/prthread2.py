@@ -1,0 +1,81 @@
+import pandas as pd
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+import time
+
+from sec_edgar_downloader import Downloader
+
+# ---------- SETTINGS ----------
+EXCEL_FILE = Path("master_all_prova.xlsx")   # your merged Excel
+CIK_COLUMN = "CIK"
+FORM       = "10-K"                   # or "10-K", "10-KT", etc.
+LIMIT      = 40                        # filings per CIK
+SAVE_DIR   = Path("data/html")
+MAX_WORKERS = 5                        # number of threads
+# -------------------------------
+
+
+def load_unique_ciks():
+    df = pd.read_excel(EXCEL_FILE)
+
+    ciks = df[CIK_COLUMN].astype(str).str.strip()
+
+    return ciks
+
+
+def download_for_cik(cik: str):
+    # tiny delay so we don't hammer SEC (can tune this)
+    time.sleep(0.1)
+
+    dl = Downloader("MyCompanyName", "my.email@domain.com", str(SAVE_DIR))
+
+    thread_name = threading.current_thread().name
+    print(f"[{thread_name}] Starting {FORM} for CIK {cik}")
+
+    try:
+        dl.get(FORM, cik, limit=LIMIT)
+        return cik, "ok", None
+    except ValueError as e:
+        # sec_edgar_downloader raises ValueError when CIK/ticker not found
+        return cik, "not_found", str(e)
+    except Exception as e:
+        return cik, "error", str(e)
+
+
+def main():
+    SAVE_DIR.mkdir(parents=True, exist_ok=True)
+
+    ciks = load_unique_ciks()
+    total = len(ciks)
+    print(f"Found {total} unique CIKs")
+
+    not_found = []
+    errors = []
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        # submit all jobs at once
+        futures = {executor.submit(download_for_cik, cik): cik for cik in ciks}
+
+        # as_completed lets them run in parallel; we consume results as they finish
+        for idx, future in enumerate(as_completed(futures), start=1):
+            cik, status, err = future.result()
+            print(f"[{idx}/{total}] CIK {cik}: {status}")
+            if status == "not_found":
+                not_found.append(cik)
+            elif status == "error":
+                errors.append((cik, err))
+
+    if not_found:
+        print("\nCIKs not found:")
+        for cik in not_found:
+            print(" ", cik)
+
+    if errors:
+        print("\nCIKs with errors:")
+        for cik, err in errors:
+            print(f" {cik}: {err}")
+
+
+if __name__ == "__main__":
+    main()
