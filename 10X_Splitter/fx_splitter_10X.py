@@ -4,12 +4,6 @@ from itertools import islice
 import re
 import time
 
-ticker = "0000104599"
-filings = "0001193125-08-093063"
-folderpath = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
-filepath = folderpath / "clean-full-submission.txt"
-TOKENS = ("ITEM")
-
 def _normalize_ws(s: str) -> str:
     s = s.replace("\xa0", " ").replace("\u2007", " ").replace("\u202f", " ")
     s = re.sub(r'\s+', ' ', s).strip()
@@ -127,8 +121,6 @@ def print_items(filepath, final_split, p):
         filename = f"item{i['item_n']}.txt"
 
         full_path = p / filename
-        #print(full_path)
-        #folderpath
         with open(full_path, "w", encoding='utf-8') as f:
             f.write(chunk)
     print("okkkkk")
@@ -136,7 +128,6 @@ def print_items(filepath, final_split, p):
 def version2(filepath, p):
     path = Path(filepath)                                                                              
     item_dict = item_dict_builder(path)                                                       # Make list of dict indicating all item n. and line n. for each item 
-    print(item_dict)
 
     out_num, n_rounds = digits_only_list(item_dict)
     print(out_num)
@@ -145,16 +136,3 @@ def version2(filepath, p):
     final_split = final_list(list_lines)                                                        # Identifies the list of dict that covers the most lines (aka actual items)
     print_items(filepath, final_split, p)
     time.sleep(0.5)
-    
-
-
-folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings
-filepath = folders_path / "clean-full-submission.txt"
-
-try:
-    version2(filepath, folders_path)
-except:
-    print("failed")
-
-
-
