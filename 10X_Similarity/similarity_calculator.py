@@ -1,6 +1,6 @@
 from pathlib import Path
 import csv
-import similarity_functions as sf
+import fx_similarity as sf
 
 folders_path = Path("data") / "html" / "sec-edgar-filings"
 

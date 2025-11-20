@@ -14,10 +14,10 @@ def before_dot(s: str) -> str:
     i = s.find('.')
     return s[:i] if i != -1 else s
 
-def item_dict_builder(p):                                                                                     # Filepath -> List[Dict] {'item_n': 'x', 'line_no': y}
+def item_dict_builder(p):                                                                                      # Filepath -> List[Dict] {'item_n': 'x', 'line_no': y}
     text = p.read_text(encoding="utf-8", errors="ignore")
     out = []
-    HEAD_RE = re.compile(r'^\s*(?P<kind>item)\b(?P<rest>.*)$', re.IGNORECASE)                                   # Regex to find lines to split
+    HEAD_RE = re.compile(r'^\s*(?P<kind>items?)\b(?P<rest>.*)$', re.IGNORECASE)                                # Regex to find lines to split
 
     for i, raw in enumerate(text.splitlines(), start=1):
         line = _normalize_ws(raw)
@@ -128,7 +128,7 @@ def print_items(filepath, final_split, p):
 def version2(filepath, p):
     path = Path(filepath)                                                                              
     item_dict = item_dict_builder(path)                                                       # Make list of dict indicating all item n. and line n. for each item 
-
+    #print(item_dict)
     out_num, n_rounds = digits_only_list(item_dict)
     print(out_num)
     item_list, rest_list = table_content_builder(item_dict)
