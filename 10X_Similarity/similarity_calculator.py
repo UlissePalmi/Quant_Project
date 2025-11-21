@@ -18,7 +18,6 @@ if __name__ == "__main__":
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
 
-
         if letter == 't':
             tickers = input("Enter ticker...").upper()
             tickers = [tickers]

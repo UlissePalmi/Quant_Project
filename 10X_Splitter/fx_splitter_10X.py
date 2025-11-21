@@ -29,7 +29,7 @@ def item_dict_builder(p):                                                       
         label = m.group('rest')
 
         out.append({
-            'item_n': before_dot(_normalize_ws(label).split()[0]),
+            'item_n': before_dot(_normalize_ws(label).split()[0]).upper(),
             'line_no': i,
         })
 
@@ -67,8 +67,7 @@ def digits_only_list(item_dict):
     return out_num, len(rounds)
 
 def table_content_builder(item_dict):
-    i = 0
-    out_num, n_rounds = digits_only_list(item_dict)
+    out_num, _ = digits_only_list(item_dict)
     items_list = ["1", "1A", "1B", "1C", "2", "3", "4", "5", "6", "7", "7A", "8"]
     letters_tuple = ("","A","B","C")
     for n in range(int(items_list[-1])+1,max(out_num)+1):
@@ -80,8 +79,6 @@ def table_content_builder(item_dict):
 
 def make_item_loops(item_list, max_item, n_rounds, item_dict):
     list_lines = []
-    #print(item_dict)
-    #print(f"item_list: {item_list}")
     last_ele = 0
     boh = 0
     while boh != n_rounds:
@@ -128,10 +125,10 @@ def print_items(filepath, final_split, p):
 def version2(filepath, p):
     path = Path(filepath)                                                                              
     item_dict = item_dict_builder(path)                                                       # Make list of dict indicating all item n. and line n. for each item 
-    #print(item_dict)
+    print(item_dict)
     out_num, n_rounds = digits_only_list(item_dict)
     print(out_num)
-    item_list, rest_list = table_content_builder(item_dict)
+    item_list, _ = table_content_builder(item_dict)
     list_lines = make_item_loops(item_list, max(out_num), n_rounds, item_dict)
     final_split = final_list(list_lines)                                                        # Identifies the list of dict that covers the most lines (aka actual items)
     print_items(filepath, final_split, p)

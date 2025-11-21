@@ -9,7 +9,7 @@ from sec_edgar_downloader import Downloader
 # ---------- SETTINGS ----------
 EXCEL_FILE = Path("master_all_prova.xlsx")      # your merged Excel
 FORM       = "10-K"                             # or "10-K", "10-KT", etc.
-LIMIT      = 40                                 # filings per CIK
+LIMIT      = 20                                 # filings per CIK, 20 years go back (2006 - 2025)
 SAVE_DIR   = Path("data/html")
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
 MAX_WORKERS = 5                                 # number of threads

@@ -112,8 +112,10 @@ def mean_vader_compound(words) -> float:
         w = (w or "").strip()
         scores = {"compound": 0.0} if not w else _sia.polarity_scores(w)
         compounds.append(scores["compound"])
-    return sum(compounds) / len(compounds)
-
+    if len(compounds) != 0:
+        return sum(compounds) / len(compounds)
+    else:
+        return 0
 
 def levenshtein_tokens(a_tokens, b_tokens, ticker):
     # Classic Wagner–Fischer with two rows
