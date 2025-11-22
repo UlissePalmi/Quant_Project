@@ -219,10 +219,6 @@ def get_content_before_sequence(html_content):
     return match.group() if match else html_content
 
 def break_on_item_heads(text: str) -> str:
-    """
-    Ensure each 'Item <num><opt letter>.' starts on its own line.
-    Example heads: 'Item 1.', 'Item 12.', 'Item 1A.', 'Item 12b .'
-    """
     _HEAD_DETECT = re.compile(r'\s*item\b\s*\d+[A-Za-z]?\s*\.', re.IGNORECASE)
     
     out = []
@@ -310,9 +306,6 @@ def name_10X(ticker, document, html_content):
 #                    space cleaner
 
 # -----------------------------------------------------
-
-
-
 
 
 

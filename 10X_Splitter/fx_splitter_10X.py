@@ -17,7 +17,7 @@ def before_dot(s: str) -> str:
 def item_dict_builder(p):                                                                                      # Filepath -> List[Dict] {'item_n': 'x', 'line_no': y}
     text = p.read_text(encoding="utf-8", errors="ignore")
     out = []
-    HEAD_RE = re.compile(r'^\s*(?P<kind>items?)\b(?P<rest>.*)$', re.IGNORECASE)                                # Regex to find lines to split
+    HEAD_RE = re.compile(r'^\s*(?P<kind>items?)\b\s*(?P<rest>[0-9].*)$', re.IGNORECASE)                                # Regex to find lines to split
 
     for i, raw in enumerate(text.splitlines(), start=1):
         line = _normalize_ws(raw)
@@ -68,7 +68,7 @@ def digits_only_list(item_dict):
 
 def table_content_builder(item_dict):
     out_num, _ = digits_only_list(item_dict)
-    items_list = ["1", "1A", "1B", "1C", "2", "3", "4", "5", "6", "7", "7A", "8"]
+    items_list = ["1", "1A", "1B", "1C", "1D", "2", "3", "4", "5", "6", "7", "7A", "8"]
     letters_tuple = ("","A","B","C")
     for n in range(int(items_list[-1])+1,max(out_num)+1):
         n = str(n)
