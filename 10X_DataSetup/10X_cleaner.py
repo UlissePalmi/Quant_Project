@@ -31,12 +31,14 @@ def clean_tickers(output_filename):
     return
 
 if __name__ == "__main__":
-    letter = input("Clean List of Tickers (L) or Clean Single Ticker (T)...").lower()
-    while letter != 'l' and letter != 't':
+    letter = input("Clean List of Tickers (L), Clean Single Ticker (T) or only delete extra (D)...").lower()
+    while letter != 'l' and letter != 't' and  letter != 'd':
         letter = input("Invalid... Enter 'L' or 'T'...").lower()
 
     if letter == 'l':
         clean_tickers(output_filename)
-    else:
+    elif letter == 't':
         ticker = input("Enter Ticker to Clean: ").upper()
         cleaner(ticker, output_filename)
+    fc.delete_folders_pre2006("data", cutoff_year=2006)
+    fc.delete_full_submission_files("data")

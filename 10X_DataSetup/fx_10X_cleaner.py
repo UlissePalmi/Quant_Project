@@ -1,5 +1,8 @@
 from sec_edgar_downloader import Downloader
 import re
+from pathlib import Path
+from typing import List
+import shutil
 import os
 
 def remove_xbrl_xml_blocks(html_content): # Removes entire XBRL/XML blocks and individual XBRL tags from HTML content.
@@ -302,3 +305,45 @@ def name_10X(ticker, document, html_content):
     return f"{ticker}_{document}_{end_name}.txt"
 
 
+# -----------------------------------------------------
+
+#                    space cleaner
+
+# -----------------------------------------------------
+
+
+
+
+
+
+def delete_folders_pre2006(root_dir: str, cutoff_year) -> List[Path]:
+
+    pattern = re.compile(r"^\d{10}-(\d{2})-\d{6}$")
+    root = Path("data") / "html" / "sec-edgar-filings"          # "data"
+    matches = []
+
+    for path in root.iterdir():
+        folder = path / "10-K"
+        for p in folder.iterdir():
+            m = pattern.match(p.name)
+            yy = int(m.group(1))
+            year = 1900 + yy if yy >= 70 else 2000 + yy
+        if year < cutoff_year:
+            matches.append(path)
+            print(f"Deleting: {path} (year={year})")
+            shutil.rmtree(path)
+
+    print(f"\nTotal folders before {cutoff_year}: {len(matches)}")
+    return
+
+def delete_full_submission_files(root_dir):
+    root = Path(root_dir)
+    count = 0
+
+    for path in root.rglob("full-submission.txt"):
+        count += 1
+        print(f"Deleting: {path}")
+        path.unlink()  # delete the file
+
+    print(f"\nTotal {'deleted'}: {count}")
+    return

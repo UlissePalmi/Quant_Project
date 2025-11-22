@@ -85,6 +85,3 @@ if __name__ == "__main__":
 
     lista(ciks)
 
-    
-
-    #remove all 10k pre 2006
