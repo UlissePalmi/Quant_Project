@@ -5,47 +5,36 @@ from typing import List
 import shutil
 import os
 
+# --------------------------------------------------------------------------------------------------------------------
+#                                              REGEX FOR HTML CLEANING
+# --------------------------------------------------------------------------------------------------------------------
+
+
 def remove_xbrl_xml_blocks(html_content): # Removes entire XBRL/XML blocks and individual XBRL tags from HTML content.
     pattern_blocks = re.compile(r'(<XBRL.*?>.*?</XBRL>)|(<XML.*?>.*?</XML>)', re.DOTALL)
     pattern_tags = re.compile(r'</?ix:.*?>')
-
-    # Apply the patterns to the content
     clean_content = re.sub(pattern_blocks, '', html_content)
     clean_content = re.sub(pattern_tags, '', clean_content)
     return clean_content
 
-def _ends_with_tag(piece: str) -> bool:
-    """
-    True if `piece` (a single segment) ends with an HTML-like tag: ...>
-    We only look at this segment's tail; that's enough because the
-    'current line' end always equals the last appended segment's end.
-    """
+def _ends_with_tag(piece: str) -> bool: # Checks if line end with html tag
     s = piece.rstrip()
     if not s.endswith(">"):
         return False
-    # look back a little to find a '<' before the closing '>'
     tail = s[-300:] if len(s) > 300 else s
     i = tail.rfind("<")
     return i != -1 and "\n" not in tail[i:]
 
-def _starts_with_tag(line: str) -> bool:
-    """True if the (next) line starts with a tag after leading spaces: <..."""
+def _starts_with_tag(line: str) -> bool: # Checks if line starts with html tag
     return line.lstrip().startswith("<")
 
-def soft_unwrap_html_lines(html: str) -> str:
-    """
-    Replace a newline with a single space *only when*:
-      - the current (combined) line does NOT end with an HTML tag, and
-      - the next line does NOT start with an HTML tag.
-    Preserves all other newlines and tags.
-    """
+def soft_unwrap_html_lines(html: str) -> str: # Removes /n if sentence is ongoing
     lines = html.splitlines()
     if not lines:
         return html
 
     out_lines = []
 
-    # We'll build the current logical line as a list of segments
     parts = [lines[0].rstrip("\r")]
     cur_ends_with_tag = _ends_with_tag(parts[-1])
 
@@ -73,7 +62,6 @@ def soft_unwrap_html_lines(html: str) -> str:
     return "\n".join(out_lines)
 
 def remove_head_with_regex(html_content): # Uses regex to remove the <head> section.
-    # The re.DOTALL flag is crucial to match across multiple lines
     pattern = re.compile(r'<head>.*?</head>', re.DOTALL | re.IGNORECASE)
     clean_content = re.sub(pattern, '', html_content)
     return clean_content
@@ -150,10 +138,10 @@ def unwrap_tags(html_content): # Removes matching <ix...> and </ix...> tags but 
     pattern = re.compile(r'<hr.*?>', re.IGNORECASE | re.DOTALL)
     html_content = re.sub(pattern, '', html_content)
     
-    pattern = re.compile(r'<B>', re.IGNORECASE | re.DOTALL)         #   REMOVE TO FIND ITEMS!!!!!
+    pattern = re.compile(r'<B>', re.IGNORECASE | re.DOTALL)
     html_content = re.sub(pattern, '\n', html_content)
 
-    pattern = re.compile(r'</B>', re.IGNORECASE)                    #   REMOVE TO FIND ITEMS!!!!!
+    pattern = re.compile(r'</B>', re.IGNORECASE)
     html_content = re.sub(pattern, '', html_content)
 
     pattern = re.compile(r'<center>', re.IGNORECASE | re.DOTALL)
@@ -192,10 +180,9 @@ def clean_lines(text_content): # Removes all lines that are empty/contain only w
     cleaned_lines = [line.lstrip() for line in text_content.splitlines() if line.strip()]
     return '\n'.join(cleaned_lines)
 
-def prepend_newline_to_p(html_content): #     Finds every <p> tag and inserts a newline character before it
+def prepend_newline_to_p(html_content): # Finds every <p> tag and inserts a newline character before it
     pattern = re.compile(r'<p.*?>', re.IGNORECASE)
-    processed_text = re.sub(pattern, r'\n\g<0>', html_content)
-    
+    processed_text = re.sub(pattern, r'\n\g<0>', html_content)    
     return processed_text
 
 def strip_all_html_tags(html_content): # Removes all HTML tags from a string.
@@ -218,26 +205,17 @@ def get_content_before_sequence(html_content):
     match = re.search(pattern, html_content)
     return match.group() if match else html_content
 
-def break_on_item_heads(text: str) -> str:
+def break_on_item_heads(text: str) -> str: # Inserts \n before each item
     _HEAD_DETECT = re.compile(r'\s*item\b\s*\d+[A-Za-z]?\s*\.', re.IGNORECASE)
-    
     out = []
     last = 0
-
     for m in _HEAD_DETECT.finditer(text):
         start = m.start()
-
-        # If we're not at the very beginning and not already at a newline,
-        # insert a newline before this head.
         if start > 0 and text[start-1] != '\n':
             out.append(text[last:start])
             out.append('\n')
             last = start
-
     out.append(text[last:])
-
-    # Optional tidy-up: remove leading spaces at the start of lines we just created
-    # (keeps any indentation that was already after a real newline)
     s = ''.join(out)                     # <-- join the list!
     return re.sub(r'[ \t]+\n', '\n', s)  # tidy spaces before newlines
 
@@ -276,16 +254,40 @@ def print_clean_txt(html_content):
         print(f"Error: The file '{html_content}' was not found.")
     return cleaned
 
+
+# --------------------------------------------------------------------------------------------------------------------
+#                                                
+# --------------------------------------------------------------------------------------------------------------------
+
+
+
+# extra checks
+
+# 1)
+#I
+#tem 1C.
+
+# 2)
+#Item
+#1C.
+
+# 3)
+#Item 1 and 2.
+
+
+
+
 def print_10X(full_path, html_content, output_filename):
     with open(full_path, "w", encoding='utf-8') as new_file:
         new_file.write(html_content)
     print("\nCleaned content saved in {}".format(output_filename))
 
-# un top: regex for html cleaning
 
 
+# --------------------------------------------------------------------------------------------------------------------
+#                                                ?RENAMING FILES?
+# --------------------------------------------------------------------------------------------------------------------
 
-# on bottom: renaming functions
 
 def extract_first_line(filepath) -> str | None:
     try:
@@ -301,12 +303,9 @@ def name_10X(ticker, document, html_content):
     return f"{ticker}_{document}_{end_name}.txt"
 
 
-# -----------------------------------------------------
-
-#                    space cleaner
-
-# -----------------------------------------------------
-
+# --------------------------------------------------------------------------------------------------------------------
+#                                                SPACE CLEANER
+# --------------------------------------------------------------------------------------------------------------------
 
 
 def delete_folders_pre2006(root_dir: str, cutoff_year) -> List[Path]:
@@ -321,10 +320,10 @@ def delete_folders_pre2006(root_dir: str, cutoff_year) -> List[Path]:
             m = pattern.match(p.name)
             yy = int(m.group(1))
             year = 1900 + yy if yy >= 70 else 2000 + yy
-        if year < cutoff_year:
-            matches.append(path)
-            print(f"Deleting: {path} (year={year})")
-            shutil.rmtree(path)
+            if year < cutoff_year:
+                matches.append(p)
+                print(f"Deleting: {p} (year={year})")
+                shutil.rmtree(p)
 
     print(f"\nTotal folders before {cutoff_year}: {len(matches)}")
     return
