@@ -3,6 +3,8 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import time
+#import fx_10X_cleaner as fc
+import DataSetup_10X.fx_10X_cleaner as fc
 
 from sec_edgar_downloader import Downloader
 
@@ -25,7 +27,6 @@ def load_unique_ciks():
 def download_for_cik(cik: str):
     # tiny delay so we don't hammer SEC (can tune this)
     time.sleep(0.1)
-
     dl = Downloader("MyCompanyName", "my.email@domain.com", str(SAVE_DIR))
 
     thread_name = threading.current_thread().name
@@ -33,9 +34,13 @@ def download_for_cik(cik: str):
 
     try:
         dl.get(FORM, cik, limit=LIMIT)
+        time.sleep(10)
+        padded_cik = str(cik.zfill(10))
+        print(padded_cik)
+        fc.delete_cik_pre2006(cutoff_year=2006, cik=padded_cik)
+        fc.cleaner(padded_cik, output_filename = "clean-full-submission.txt")
         return cik, "ok", None
     except ValueError as e:
-        # sec_edgar_downloader raises ValueError when CIK/ticker not found
         return cik, "not_found", str(e)
     except Exception as e:
         return cik, "error", str(e)

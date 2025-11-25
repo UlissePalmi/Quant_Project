@@ -6,21 +6,11 @@ from concurrent.futures import ProcessPoolExecutor
 
 output_filename = "clean-full-submission.txt"
 
-def cleaner(ticker, output_filename):
-    folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"
-    for p in folders_path.iterdir():
-        print(p)
-        full_path = os.path.join(p, output_filename)
-        html_content = os.path.join(p,"full-submission.txt")
-        html_content = fc.print_clean_txt(html_content)
-        fc.print_10X(full_path, html_content, output_filename)
-    return
-
 def worker(s, output_filename):
     print(s)
     if s.is_dir():
         ticker = s.name
-        cleaner(ticker, output_filename)
+        fc.cleaner(ticker, output_filename)
     return
 
 def clean_tickers(output_filename):
@@ -39,6 +29,6 @@ if __name__ == "__main__":
         clean_tickers(output_filename)
     elif letter == 't':
         ticker = input("Enter Ticker to Clean: ").upper()
-        cleaner(ticker, output_filename)
+        fc.cleaner(ticker, output_filename)
     fc.delete_folders_pre2006("data", cutoff_year=2006)
     fc.delete_full_submission_files("data")

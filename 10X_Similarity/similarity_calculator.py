@@ -2,6 +2,8 @@ from pathlib import Path
 import csv
 import fx_similarity as sf
 
+
+
 folders_path = Path("data") / "html" / "sec-edgar-filings"
 
 if __name__ == "__main__":

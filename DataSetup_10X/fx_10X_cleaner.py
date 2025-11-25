@@ -219,7 +219,6 @@ def break_on_item_heads(text: str) -> str: # Inserts \n before each item
     s = ''.join(out)                     # <-- join the list!
     return re.sub(r'[ \t]+\n', '\n', s)  # tidy spaces before newlines
 
-
 def clean_html(file_content):
     cleaned = soft_unwrap_html_lines(file_content)
     cleaned = get_from_sec_document(cleaned)
@@ -256,32 +255,119 @@ def print_clean_txt(html_content):
 
 
 # --------------------------------------------------------------------------------------------------------------------
-#                                                
+#                                                Cleaning 'Items'
 # --------------------------------------------------------------------------------------------------------------------
 
 
+def merge_I_tem(content: str) -> str: # Finds lines with 'I' & next line starts with 'tem' then merge them
+    lines = content.splitlines()  # split into lines without keeping '\n'
+    new_lines = []
+    i = 0
 
-# extra checks
+    while i < len(lines):
+        # Make sure there *is* a next line to look at
+        if (
+            lines[i].strip() == "I" and
+            i + 1 < len(lines) and
+            lines[i + 1].lstrip().startswith("tem")
+        ):
+            merged_line = "I" + lines[i + 1].lstrip()  # e.g. "Item 1. ..."
+            new_lines.append(merged_line)
+            i += 2  # skip the next line because we've merged it
+        else:
+            new_lines.append(lines[i])
+            i += 1
+    return "\n".join(new_lines)
 
-# 1)
-#I
-#tem 1C.
+def ensure_space_after_item(text: str) -> str:  # Ensures every 'Item'/'Items' is followed by a space
+    return re.sub(r'\b(Items?)\b(?=\S)', r'\1 ', text)
 
-# 2)
-#Item
-#1C.
+
+def merge_item_with_number_line(text: str) -> str: # If a line is just 'Item'/'Items' and the following line starts with a number merges them
+    lines = text.splitlines()
+    new_lines = []
+    i = 0
+
+    while i < len(lines):
+        current = lines[i].strip()
+
+        # Check if this line is exactly 'Item' or 'Items'
+        if current in ("Item", "Items") and i + 1 < len(lines):
+            next_raw = lines[i + 1]
+            # Remove leading spaces to inspect the first real character
+            next_stripped_leading = next_raw.lstrip()
+
+            # Check if next line starts with a digit
+            if next_stripped_leading and next_stripped_leading[0].isdigit():
+                # Merge: 'Item' + space + next line (without leading spaces)
+                merged = f"{current} {next_stripped_leading}"
+                new_lines.append(merged)
+                i += 2  # skip the next line (already merged)
+                continue
+
+        # Default: keep line as-is
+        new_lines.append(lines[i])
+        i += 1
+
+    return "\n".join(new_lines)
+import re
+
+def merge_item_number_with_suffix(text: str) -> str:
+    """
+    If a line is 'Item {number}' only, and the following line starts with either:
+      - a single letter and a dot (e.g., 'A. Risk Factors')
+      - or just a dot (e.g., '. Risk Factors')
+    then merge them into one line: 'Item 1A. Risk Factors' or 'Item 1. Risk Factors'.
+    """
+    lines = text.splitlines()
+    new_lines = []
+    i = 0
+
+    while i < len(lines):
+        current_stripped = lines[i].strip()
+
+        # Match 'Item {number}' (e.g., 'Item 1', 'Item 12')
+        if re.fullmatch(r'Item\s+\d+', current_stripped) and i + 1 < len(lines):
+            next_raw = lines[i + 1]
+            next_stripped = next_raw.lstrip()
+
+            # Next line starts with 'A.' or 'b.' etc, OR with just '.'
+            if re.match(r'[A-Za-z]\.', next_stripped) or next_stripped.startswith('.'):
+                merged = current_stripped + next_stripped  # e.g. 'Item 1' + 'A. Risk Factors'
+                new_lines.append(merged)
+                i += 2
+                continue
+
+        # Default: keep line as-is
+        new_lines.append(lines[i])
+        i += 1
+    return "\n".join(new_lines)
+
 
 # 3)
 #Item 1 and 2.
 
-
-
+def cleaning_items(html_content):
+    html_content = merge_I_tem(html_content)
+    html_content = ensure_space_after_item(html_content)
+    html_content = merge_item_with_number_line(html_content)
+    return merge_item_number_with_suffix(html_content)
 
 def print_10X(full_path, html_content, output_filename):
     with open(full_path, "w", encoding='utf-8') as new_file:
         new_file.write(html_content)
     print("\nCleaned content saved in {}".format(output_filename))
 
+def cleaner(ticker, output_filename):
+    folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"
+    for p in folders_path.iterdir():
+        print(p)
+        full_path = os.path.join(p, output_filename)
+        html_content = os.path.join(p,"full-submission.txt")
+        html_content = print_clean_txt(html_content)                    # html removal
+        html_content = cleaning_items(html_content)
+        print_10X(full_path, html_content, output_filename)
+    return
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -307,6 +393,25 @@ def name_10X(ticker, document, html_content):
 #                                                SPACE CLEANER
 # --------------------------------------------------------------------------------------------------------------------
 
+
+def delete_cik_pre2006(cutoff_year, cik) -> List[Path]:
+    pattern = re.compile(r"^\d{10}-(\d{2})-\d{6}$")
+    folder = Path("data") / "html" / "sec-edgar-filings" / cik / "10-K"
+    print(folder)
+    if not os.path.exists(folder):
+        print("skipped pre 2006")
+        return
+
+    matches = []
+
+    for p in folder.iterdir():
+        m = pattern.match(p.name)
+        yy = int(m.group(1))
+        year = 1900 + yy if yy >= 70 else 2000 + yy
+        if year < cutoff_year:
+            matches.append(p)
+            print(f"Deleting: {p} (year={year})")
+            shutil.rmtree(p)
 
 def delete_folders_pre2006(root_dir: str, cutoff_year) -> List[Path]:
 
