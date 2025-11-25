@@ -39,6 +39,7 @@ def download_for_cik(cik: str):
         print(padded_cik)
         fc.delete_cik_pre2006(cutoff_year=2006, cik=padded_cik)
         fc.cleaner(padded_cik, output_filename = "clean-full-submission.txt")
+        fc.del_full_submission_files(padded_cik)
         return cik, "ok", None
     except ValueError as e:
         return cik, "not_found", str(e)

@@ -133,3 +133,15 @@ def version2(filepath, p):
     final_split = final_list(list_lines)                                                        # Identifies the list of dict that covers the most lines (aka actual items)
     print_items(filepath, final_split, p)
     time.sleep(0.5)
+
+
+
+
+
+def try_exercize(p):
+    filepath = p / "clean-full-submission.txt"
+    try:
+        version2(filepath, p)
+    except:
+        print("failed")
+    return

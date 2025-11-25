@@ -413,6 +413,20 @@ def delete_cik_pre2006(cutoff_year, cik) -> List[Path]:
             print(f"Deleting: {p} (year={year})")
             shutil.rmtree(p)
 
+def del_full_submission_files(cik):
+    folder = Path("data") / "html" / "sec-edgar-filings" / cik / "10-K"
+    count = 0
+
+    for path in folder.rglob("full-submission.txt"):
+        count += 1
+        print(f"Deleting: {path}")
+        path.unlink()  # delete the file
+
+    print(f"\nTotal {'deleted'}: {count}")
+    return
+
+# --------------------------------------------------------------------------------------------------------------------
+
 def delete_folders_pre2006(root_dir: str, cutoff_year) -> List[Path]:
 
     pattern = re.compile(r"^\d{10}-(\d{2})-\d{6}$")

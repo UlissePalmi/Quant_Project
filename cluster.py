@@ -1,6 +1,9 @@
 import DataSetup_10X.sec_download_html as sd
-import DataSetup_10X.fx_10X_cleaner as fc
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor
+import Splitter_10X.fx_splitter_10X as sp
+import Similarity_10X.fx_similarity as si
+import csv
 
 
 # ---------- SETTINGS ----------
@@ -14,6 +17,37 @@ MAX_WORKERS = 5                                 # number of threads
 
 
 
-ciks = sd.load_unique_ciks()
-sd.lista(ciks)
+# folder.file inside files with functions
+if __name__ == "__main__":
+    ciks = sd.load_unique_ciks()
+    sd.lista(ciks)
 
+
+    # Splitting
+    ciklist = Path("data") / "html" / "sec-edgar-filings"
+    paths = []
+    for s in ciklist.iterdir():
+        if s.is_dir():
+            cik = s.name
+            folders_path = ciklist / cik / "10-K"
+            print(cik)
+            for p in folders_path.iterdir():
+                if p.is_dir():
+                    paths.append(p)
+
+    # process all filings in parallel
+    with ProcessPoolExecutor() as executor:
+        list(executor.map(sp.try_exercize, paths))
+
+
+    #Similarity
+    t_folders_path = Path("data") / "html" / "sec-edgar-filings"
+    tickers = [p.name for p in t_folders_path.iterdir()]
+    
+    fieldnames = ["ticker", "date_a", "date_b", "distance", "similarity", "len_a", "len_b", "sentiment"]
+    with open("similarity_data.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for ticker in tickers:
+            si.concurrency_runner(writer, ticker)
