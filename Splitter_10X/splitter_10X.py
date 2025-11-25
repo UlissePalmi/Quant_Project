@@ -31,7 +31,7 @@ if __name__ == "__main__":
                         paths.append(p)
 
         # process all filings in parallel
-        with ProcessPoolExecutor() as executor:
+        with ProcessPoolExecutor(max_workers=3) as executor:
             list(executor.map(try_exercize, paths))
     else:
         p = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings

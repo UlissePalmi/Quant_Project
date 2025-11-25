@@ -12,7 +12,7 @@ FORM       = "10-K"                             # or "10-K", "10-KT", etc.
 LIMIT      = 20                                 # filings per CIK, 20 years go back (2006 - 2025)
 SAVE_DIR   = Path("data/html")
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
-MAX_WORKERS = 5                                 # number of threads
+MAX_WORKERS = 4                                 # number of threads
 # -------------------------------
 
 

@@ -85,7 +85,7 @@ def concurrency_runner(writer, ticker):
         ordered_data = prepare_data(ticker)
         model = []
 
-        with ProcessPoolExecutor() as executor:
+        with ProcessPoolExecutor(max_workers=3) as executor:
             model = list(executor.map(process_comps, ordered_data, repeat(ticker)))
             writer.writerows(model)
     except:
