@@ -23,9 +23,6 @@ if __name__ == "__main__":
     sd.lista(ciks)
 
 
-
-
-'''
     # Splitting
     ciklist = Path("data") / "html" / "sec-edgar-filings"
     paths = []
@@ -54,4 +51,3 @@ if __name__ == "__main__":
 
         for ticker in tickers:
             si.concurrency_runner(writer, ticker)
-'''
