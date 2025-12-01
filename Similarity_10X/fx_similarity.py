@@ -147,7 +147,7 @@ def levenshtein_tokens(a_tokens, b_tokens, ticker):
         b_set = set(b_tokens)
         new_words = [t for t in a_tokens if t not in b_set]
     # after both loops finish:
-        print()
+        #print()
         prev = cur
     return prev[n], new_words
 
