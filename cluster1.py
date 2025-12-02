@@ -1,5 +1,6 @@
 import DataSetup_10X.sec_download_html as sd
 from pathlib import Path
+import fx_cluster as fc
 from concurrent.futures import ProcessPoolExecutor
 import Splitter_10X.fx_splitter_10X as sp
 import Similarity_10X.fx_similarity as si
@@ -7,24 +8,24 @@ import csv
 
 
 # ---------- SETTINGS ----------
-EXCEL_FILE = Path("master_all_prova.xlsx")      # your merged Excel
-FORM       = "10-K"                             # or "10-K", "10-KT", etc.
-LIMIT      = 20                                 # filings per CIK, 20 years go back (2006 - 2025)
-SAVE_DIR   = Path("data/html")
+EXCEL_FILE = Path("master_files") / "master_all_prova.xlsx"                 # your merged Excel
+FORM       = "10-K"                                                         # or "10-K", "10-KT", etc.
+LIMIT      = 20                                                             # filings per CIK, 20 years go back (2006 - 2025)
+SAVE_DIR   = Path("data1/html")
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
-MAX_WORKERS = 8                                 # number of threads
+MAX_WORKERS = 4                                                             # number of threads
 # -------------------------------
 
 
 
 # folder.file inside files with functions
 if __name__ == "__main__":
-    ciks = sd.load_unique_ciks()
-    sd.lista(ciks)
+    ciks = fc.load_unique_ciks(EXCEL_FILE)
+    fc.lista(ciks, MAX_WORKERS, SAVE_DIR)
 
 
     # Splitting
-    ciklist = Path("data") / "html" / "sec-edgar-filings"
+    ciklist = SAVE_DIR / "sec-edgar-filings"
     paths = []
     for s in ciklist.iterdir():
         if s.is_dir():
@@ -39,9 +40,9 @@ if __name__ == "__main__":
     with ProcessPoolExecutor() as executor:
         list(executor.map(sp.try_exercize, paths))
 
-
+    #PROBLEM HERE
     #Similarity
-    t_folders_path = Path("data") / "html" / "sec-edgar-filings"
+    t_folders_path = SAVE_DIR / "sec-edgar-filings"
     tickers = [p.name for p in t_folders_path.iterdir()]
     
     fieldnames = ["ticker", "date_a", "date_b", "distance", "similarity", "len_a", "len_b", "sentiment"]

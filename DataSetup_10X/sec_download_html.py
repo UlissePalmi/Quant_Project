@@ -5,7 +5,6 @@ import threading
 import time
 #import fx_10X_cleaner as fc
 import DataSetup_10X.fx_10X_cleaner as fc
-
 from sec_edgar_downloader import Downloader
 
 # ---------- SETTINGS ----------
