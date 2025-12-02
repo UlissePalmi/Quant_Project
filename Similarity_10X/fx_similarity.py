@@ -60,9 +60,9 @@ def make_comps(ordered_filings, date_data):
         n2 = n2 + 1
     return comps_list
 
-def prepare_data(ticker):
+def prepare_data(ticker, SAVE_DIR):
     date_data = []
-    folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"
+    folders_path = SAVE_DIR / "sec-edgar-filings" / ticker / "10-K"
     for i in folders_path.iterdir():
         if (Path(i) / "item1A.txt").is_file():
             filing = i.name
@@ -71,25 +71,25 @@ def prepare_data(ticker):
     comps_list = make_comps(ordered_filings, date_data)                                 # List of dictionary
     return comps_list
 
-def process_comps(comps, ticker):
+def process_comps(comps, ticker, SAVE_DIR):
     filings = comps["filing1"]
     filings2 = comps["filing2"]
-    file = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
-    file2 = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
+    file = SAVE_DIR / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
+    file2 = SAVE_DIR / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
     text = file.read_text(encoding="utf-8", errors="ignore")
     text2 = file2.read_text(encoding="utf-8", errors="ignore")
     return min_edit_similarity(text, text2, comps, ticker)
 
-def concurrency_runner(writer, ticker):
-    try:
-        ordered_data = prepare_data(ticker)
-        model = []
-
-        with ProcessPoolExecutor(max_workers=3) as executor:
-            model = list(executor.map(process_comps, ordered_data, repeat(ticker)))
-            writer.writerows(model)
-    except:
-        print("Skipped")
+def concurrency_runner(writer, ticker, SAVE_DIR):
+    #try:
+    ordered_data = prepare_data(ticker, SAVE_DIR)
+    model = []
+    print("funzia")
+    with ProcessPoolExecutor(max_workers=3) as executor:
+        model = list(executor.map(process_comps, ordered_data, repeat(ticker), repeat(SAVE_DIR)))
+        writer.writerows(model)
+    #except:
+    #    print("Skipped")
 
 
 

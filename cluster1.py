@@ -40,16 +40,15 @@ if __name__ == "__main__":
     with ProcessPoolExecutor() as executor:
         list(executor.map(sp.try_exercize, paths))
 
-    print("save to here")
-    #PROBLEM HERE
+
     #Similarity
     t_folders_path = SAVE_DIR / "sec-edgar-filings"
     tickers = [p.name for p in t_folders_path.iterdir()]
-    
     fieldnames = ["ticker", "date_a", "date_b", "distance", "similarity", "len_a", "len_b", "sentiment"]
     with open("similarity_data.csv", "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
+        print("save to here")
 
         for ticker in tickers:
-            si.concurrency_runner(writer, ticker)
+            si.concurrency_runner(writer, ticker, SAVE_DIR)

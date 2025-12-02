@@ -1,6 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import DataSetup_10X.fx_10X_cleaner as fc
+import Similarity_10X.fx_similarity as fs
 from sec_edgar_downloader import Downloader
+from concurrent.futures import ProcessPoolExecutor
+from itertools import repeat
 from pathlib import Path
 import pandas as pd
 import threading

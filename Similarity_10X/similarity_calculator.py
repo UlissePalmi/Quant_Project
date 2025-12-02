@@ -3,8 +3,8 @@ import csv
 import fx_similarity as sf
 
 
-
-folders_path = Path("data") / "html" / "sec-edgar-filings"
+SAVE_DIR = Path("data") / "html"
+folders_path = SAVE_DIR / "sec-edgar-filings"
 
 if __name__ == "__main__":
 
@@ -25,5 +25,4 @@ if __name__ == "__main__":
             tickers = [tickers]
         
         for ticker in tickers:
-            sf.concurrency_runner(writer, ticker)
-
+            sf.concurrency_runner(writer, ticker, SAVE_DIR)
