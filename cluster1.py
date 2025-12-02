@@ -40,6 +40,7 @@ if __name__ == "__main__":
     with ProcessPoolExecutor() as executor:
         list(executor.map(sp.try_exercize, paths))
 
+    print("save to here")
     #PROBLEM HERE
     #Similarity
     t_folders_path = SAVE_DIR / "sec-edgar-filings"

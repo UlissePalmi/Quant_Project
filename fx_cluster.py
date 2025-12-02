@@ -57,20 +57,19 @@ def download_for_cik(cik, SAVE_DIR):
     thread_name = threading.current_thread().name
     print(f"[{thread_name}] Starting {FORM} for CIK {cik}")
 
-#    try:
-    dl.get(FORM, cik, limit=LIMIT)
-    time.sleep(10)
-    padded_cik = str(cik.zfill(10))
-    print(padded_cik)
-    delete_cik_pre2006(padded_cik, SAVE_DIR, cutoff_year=2006)
-    cleaner(padded_cik, SAVE_DIR, output_filename = "clean-full-submission.txt")
-    del_full_submission_files(padded_cik, SAVE_DIR)
-    print('sono riuscito')
-    return cik, "ok", None
-#    except ValueError as e:
-#        return cik, "not_found", str(e)
-#    except Exception as e:
-#        return cik, "error", str(e)
+    try:
+        dl.get(FORM, cik, limit=LIMIT)
+        time.sleep(10)
+        padded_cik = str(cik.zfill(10))
+        print(padded_cik)
+        delete_cik_pre2006(padded_cik, SAVE_DIR, cutoff_year=2006)
+        cleaner(padded_cik, SAVE_DIR, output_filename = "clean-full-submission.txt")
+        del_full_submission_files(padded_cik, SAVE_DIR)
+        return cik, "ok", None
+    except ValueError as e:
+        return cik, "not_found", str(e)
+    except Exception as e:
+        return cik, "error", str(e)
     
 
 # --------------------------------------------------------------------------------------------------------------------
