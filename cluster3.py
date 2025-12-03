@@ -17,7 +17,6 @@ MAX_WORKERS = 4                                                             # nu
 # -------------------------------
 
 
-
 # folder.file inside files with functions
 if __name__ == "__main__":
     ciks = fc.load_unique_ciks(EXCEL_FILE)
@@ -45,7 +44,7 @@ if __name__ == "__main__":
     t_folders_path = SAVE_DIR / "sec-edgar-filings"
     tickers = [p.name for p in t_folders_path.iterdir()]
     fieldnames = ["ticker", "date_a", "date_b", "distance", "similarity", "len_a", "len_b", "sentiment"]
-    with open("similarity_data.csv3", "w", newline="", encoding="utf-8") as f:
+    with open("similarity_data3.csv", "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
 
