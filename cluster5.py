@@ -4,9 +4,10 @@ from concurrent.futures import ProcessPoolExecutor
 import Splitter_10X.fx_splitter_10X as sp
 import Similarity_10X.fx_similarity as si
 from itertools import repeat
+import shutil
 import csv
 
-# Lines that change: 11, 14, 45
+# Lines that change: 12, 15, 58
 # ---------- SETTINGS ----------
 EXCEL_FILE = Path("master_files") / "master_5.xlsx"                         # your merged Excel
 FORM       = "10-K"                                                         # or "10-K", "10-KT", etc.
@@ -39,6 +40,17 @@ if __name__ == "__main__":
     with ProcessPoolExecutor() as executor:
         list(executor.map(sp.try_exercize, paths))
     '''
+
+    checker_path = SAVE_DIR / "sec-edgar-filings"
+    for ticker_folder in checker_path.iterdir():
+        if not ticker_folder.is_dir():
+            continue
+        if not any(ticker_folder.rglob('*.txt')):
+            try:
+                shutil.rmtree(ticker_folder)
+            except Exception as e:
+                print(f"Error deleting {ticker_folder.name}: {e}")
+
     #Similarity
     t_folders_path = SAVE_DIR / "sec-edgar-filings"
     tickers = [p.name for p in t_folders_path.iterdir()]

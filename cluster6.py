@@ -4,6 +4,7 @@ from concurrent.futures import ProcessPoolExecutor
 import Splitter_10X.fx_splitter_10X as sp
 import Similarity_10X.fx_similarity as si
 from itertools import repeat
+import shutil
 import csv
 
 # Lines that change: 11, 14, 45
@@ -21,6 +22,16 @@ MAX_WORKERS2 = 24                                                           # nu
 if __name__ == "__main__":
     ciks = fc.load_unique_ciks(EXCEL_FILE)
     fc.lista(ciks, MAX_WORKERS, SAVE_DIR)
+
+    checker_path = SAVE_DIR / "sec-edgar-filings"
+    for ticker_folder in checker_path.iterdir():
+        if not ticker_folder.is_dir():
+            continue
+        if not any(ticker_folder.rglob('*.txt')):
+            try:
+                shutil.rmtree(ticker_folder)
+            except Exception as e:
+                print(f"Error deleting {ticker_folder.name}: {e}")
 
     # Splitting
     ciklist = SAVE_DIR / "sec-edgar-filings"
