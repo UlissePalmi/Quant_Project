@@ -1,30 +1,27 @@
-import DataSetup_10X.sec_download_html as sd
 from pathlib import Path
 import fx_cluster as fc
 from concurrent.futures import ProcessPoolExecutor
 import Splitter_10X.fx_splitter_10X as sp
-import fx_cluster as fc
+import Similarity_10X.fx_similarity as si
 from itertools import repeat
 import csv
 
-
+# Lines that change: 11, 14, 45
 # ---------- SETTINGS ----------
 EXCEL_FILE = Path("master_files") / "master_5.xlsx"                         # your merged Excel
 FORM       = "10-K"                                                         # or "10-K", "10-KT", etc.
 LIMIT      = 20                                                             # filings per CIK, 20 years go back (2006 - 2025)
 SAVE_DIR   = Path("data5/html")
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
-MAX_WORKERS = 4
-MAX_WORKERS2 = 16                                                             # number of threads
+MAX_WORKERS = 6
+MAX_WORKERS2 = 24                                                           # number of threads
 # -------------------------------
-
 
 # folder.file inside files with functions
 if __name__ == "__main__":
     '''
     ciks = fc.load_unique_ciks(EXCEL_FILE)
     fc.lista(ciks, MAX_WORKERS, SAVE_DIR)
-
 
     # Splitting
     ciklist = SAVE_DIR / "sec-edgar-filings"
@@ -42,7 +39,6 @@ if __name__ == "__main__":
     with ProcessPoolExecutor() as executor:
         list(executor.map(sp.try_exercize, paths))
     '''
-
     #Similarity
     t_folders_path = SAVE_DIR / "sec-edgar-filings"
     tickers = [p.name for p in t_folders_path.iterdir()]
@@ -52,7 +48,7 @@ if __name__ == "__main__":
         writer.writeheader()
 
         with ProcessPoolExecutor(MAX_WORKERS2) as executor:
-            results_iterator = executor.map(fc.concurrency_runner, tickers, repeat(SAVE_DIR))
+            results_iterator = executor.map(si.concurrency_runner, tickers, repeat(SAVE_DIR))
 
         print(results_iterator)
 

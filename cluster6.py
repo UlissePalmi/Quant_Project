@@ -8,10 +8,10 @@ import csv
 
 # Lines that change: 11, 14, 45
 # ---------- SETTINGS ----------
-EXCEL_FILE = Path("master_files") / "master_3.xlsx"                         # your merged Excel
+EXCEL_FILE = Path("master_files") / "master_6.xlsx"                         # your merged Excel
 FORM       = "10-K"                                                         # or "10-K", "10-KT", etc.
 LIMIT      = 20                                                             # filings per CIK, 20 years go back (2006 - 2025)
-SAVE_DIR   = Path("data3/html")
+SAVE_DIR   = Path("data6/html")
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
 MAX_WORKERS = 6
 MAX_WORKERS2 = 24                                                           # number of threads
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     t_folders_path = SAVE_DIR / "sec-edgar-filings"
     tickers = [p.name for p in t_folders_path.iterdir()]
     fieldnames = ["ticker", "date_a", "date_b", "distance", "similarity", "len_a", "len_b", "sentiment"]
-    with open("similarity_data3.csv", "w", newline="", encoding="utf-8") as f:
+    with open("similarity_data6.csv", "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
 
