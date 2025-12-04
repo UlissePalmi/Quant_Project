@@ -3,6 +3,7 @@ import DataSetup_10X.fx_10X_cleaner as fc
 import Similarity_10X.fx_similarity as fs
 from sec_edgar_downloader import Downloader
 from concurrent.futures import ProcessPoolExecutor
+import Similarity_10X.fx_similarity as si
 from itertools import repeat
 from pathlib import Path
 import pandas as pd
@@ -121,3 +122,45 @@ def del_full_submission_files(cik, SAVE_DIR):
 
     print(f"\nTotal {'deleted'}: {count}")
     return
+
+
+
+
+
+
+
+
+
+
+
+
+
+def concurrency_runner(ticker, SAVE_DIR):
+    try:
+        ordered_data = si.prepare_data(ticker, SAVE_DIR)
+        model = []
+        for comp in ordered_data:
+            model.append(si.process_comps(comp, ticker, SAVE_DIR))
+        return model
+    except:
+        print("Skipped")
+
+def prepare_data(ticker, SAVE_DIR):
+    date_data = []
+    folders_path = SAVE_DIR / "sec-edgar-filings" / ticker / "10-K"
+    for i in folders_path.iterdir():
+        if (Path(i) / "item1A.txt").is_file():
+            filing = i.name
+            date_data.append(si.check_date(i, filing))
+    ordered_filings = si.order_filings(date_data)
+    comps_list = si.make_comps(ordered_filings, date_data)                                 # List of dictionary
+    return comps_list
+
+def process_comps(comps, ticker, SAVE_DIR):
+    filings = comps["filing1"]
+    filings2 = comps["filing2"]
+    file = SAVE_DIR / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
+    file2 = SAVE_DIR / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
+    text = file.read_text(encoding="utf-8", errors="ignore")
+    text2 = file2.read_text(encoding="utf-8", errors="ignore")
+    return si.min_edit_similarity(text, text2, comps, ticker)

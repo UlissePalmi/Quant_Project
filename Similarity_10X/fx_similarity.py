@@ -80,11 +80,11 @@ def process_comps(comps, ticker, SAVE_DIR):
     text2 = file2.read_text(encoding="utf-8", errors="ignore")
     return min_edit_similarity(text, text2, comps, ticker)
 
-def concurrency_runner(writer, ticker, SAVE_DIR):
+def concurrency_runner(writer, ticker, max_workers, SAVE_DIR):
     try:
         ordered_data = prepare_data(ticker, SAVE_DIR)
         model = []
-        with ProcessPoolExecutor(max_workers=3) as executor:
+        with ProcessPoolExecutor(max_workers) as executor:
             model = list(executor.map(process_comps, ordered_data, repeat(ticker), repeat(SAVE_DIR)))
             writer.writerows(model)
     except:

@@ -4,6 +4,7 @@ import fx_cluster as fc
 from concurrent.futures import ProcessPoolExecutor
 import Splitter_10X.fx_splitter_10X as sp
 import Similarity_10X.fx_similarity as si
+from itertools import repeat
 import csv
 
 
@@ -14,11 +15,23 @@ LIMIT      = 20                                                             # fi
 SAVE_DIR   = Path("data4/html")
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
 MAX_WORKERS = 4                                                             # number of threads
+MAX_WORKERS2 = 16                                                           # number of processors used
 # -------------------------------
+
+def concurrency_runner(writer, ticker, max_workers, SAVE_DIR):
+    try:
+        ordered_data = si.prepare_data(ticker, SAVE_DIR)
+        model = []
+        with ProcessPoolExecutor(max_workers) as executor:
+            model = list(executor.map(si.process_comps, ordered_data, repeat(ticker), repeat(SAVE_DIR)))
+            writer.writerows(model)
+    except:
+        print("Skipped")
 
 
 # folder.file inside files with functions
 if __name__ == "__main__":
+    '''
     ciks = fc.load_unique_ciks(EXCEL_FILE)
     fc.lista(ciks, MAX_WORKERS, SAVE_DIR)
 
@@ -38,7 +51,7 @@ if __name__ == "__main__":
     # process all filings in parallel
     with ProcessPoolExecutor() as executor:
         list(executor.map(sp.try_exercize, paths))
-
+    '''
 
     #Similarity
     t_folders_path = SAVE_DIR / "sec-edgar-filings"
@@ -49,4 +62,4 @@ if __name__ == "__main__":
         writer.writeheader()
 
         for ticker in tickers:
-            si.concurrency_runner(writer, ticker, SAVE_DIR)
+            concurrency_runner(writer, ticker, MAX_WORKERS2, SAVE_DIR)
