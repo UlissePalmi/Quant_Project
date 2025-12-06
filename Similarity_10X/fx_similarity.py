@@ -80,6 +80,20 @@ def process_comps(comps, ticker, SAVE_DIR):
     text2 = file2.read_text(encoding="utf-8", errors="ignore")
     return min_edit_similarity(text, text2, comps, ticker)
 
+def concurrency_runner(writer, ticker, SAVE_DIR):
+    #try:
+    ordered_data = prepare_data(ticker, SAVE_DIR)
+    model = []
+    print("funzia")
+    with ProcessPoolExecutor(max_workers=3) as executor:
+        model = list(executor.map(process_comps, ordered_data, repeat(ticker), repeat(SAVE_DIR)))
+        writer.writerows(model)
+    #except:
+    #    print("Skipped")
+
+
+
+'''
 def concurrency_runner(writer, ticker, max_workers, SAVE_DIR):
     try:
         ordered_data = prepare_data(ticker, SAVE_DIR)
@@ -89,7 +103,7 @@ def concurrency_runner(writer, ticker, max_workers, SAVE_DIR):
             writer.writerows(model)
     except:
         print("Skipped")
-
+'''
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -146,7 +160,7 @@ def levenshtein_tokens(a_tokens, b_tokens, ticker):
         b_set = set(b_tokens)
         new_words = [t for t in a_tokens if t not in b_set]
     # after both loops finish:
-        #print()
+        print()
         prev = cur
     return prev[n], new_words
 

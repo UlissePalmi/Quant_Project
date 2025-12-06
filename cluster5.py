@@ -60,7 +60,7 @@ if __name__ == "__main__":
         writer.writeheader()
 
         with ProcessPoolExecutor(MAX_WORKERS2) as executor:
-            results_iterator = executor.map(si.concurrency_runner, tickers, repeat(SAVE_DIR))
+            results_iterator = executor.map(fc.concurrency_runner, tickers, repeat(SAVE_DIR))
 
         print(results_iterator)
 
