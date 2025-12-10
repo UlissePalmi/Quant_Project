@@ -73,13 +73,13 @@ sim_df['ret_prev_12m'] = (sim_df['ret_prev_12m'] - 1)*100
 # Optional: drop helper column
 sim_df.drop(columns=['prev_start'], inplace=True)
 
-'''
+
 sim_df['date_a'] = pd.to_datetime(sim_df['date_a'])
 sim_df = sim_df.sort_values(['ticker', 'date_a'])
 
 # Add old_similarity = previous year's similarity for same cik
 sim_df['old_similarity'] = sim_df.groupby('ticker')['similarity'].shift(1)
-'''
+
 
 print(merged.head(50))
 print(sim_df.head(50))

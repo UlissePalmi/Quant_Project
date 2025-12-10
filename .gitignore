@@ -230,3 +230,6 @@ missing.csv
 returns.csv
 complete_similarity_data.xlsx
 master_all.xlsx
+cleanSimData.csv
+merged_dataset.csv
+pred_check.csv

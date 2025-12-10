@@ -14,4 +14,5 @@ df = df.drop(columns='days')
 #print(days)
 print(df)
 
+
 df.to_csv("cleanSimData.csv")
