@@ -41,7 +41,7 @@ merged = merged[
 
 mean_window = merged.groupby('sim_idx')['retPlusOne'].mean()
 sim_df['ret_18'] = sim_df.index.to_series().map(mean_window)
-
+sim_df['ret_18'] = (sim_df['ret_18'] - 1)*100
 sim_df = sim_df.dropna(subset=['ret_18'])
 
 print(merged.head(50))

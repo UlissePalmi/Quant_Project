@@ -5,7 +5,7 @@ from sklearn.tree import DecisionTreeRegressor, export_text
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-df = pd.read_csv("Final Dataset.csv")
+df = pd.read_csv("merged_dataset.csv")
 
 #df = df[df["similarity"] < 0.70]
 
@@ -21,10 +21,13 @@ df["sim_below_70"] = (df["similarity"] < sim_threshold).astype(int)
 
 # sentiment sign: 1 if >= 0 else 0 (you can flip to {-1,1} if you prefer)
 df["sentiment_pos"] = (df["sentiment"] >= 0).astype(int)
+df["len_growth_pct"] = df['len_a'] / df['len_b'] - 1
+df["inc_len"] = df["len_a"] > df["len_b"]
+
 
 # Keep just the three inputs you requested
-X = df[["similarity", "sim_below_70", "sentiment", "sentiment_pos", "len_growth_pct", "ret_12m_prior_to_10k"]].copy()
-y = df["ret_18m_next_month"].copy()
+X = df[["similarity", "sim_below_70", "sentiment", "sentiment_pos", "inc_len","len_growth_pct"]].copy()
+y = df["ret_18"].copy()
 
 # Drop rows with missing values in features/target
 mask = X.notna().all(axis=1) & y.notna()
