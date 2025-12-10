@@ -1,14 +1,11 @@
 import wrds
 import pandas as pd
-import csv
 
 # 1. Connect
 db = wrds.Connection(wrds_username='upalmier')
 
 df_input = pd.read_excel("master_all.xlsx")
 ciks = df_input['CIK'].astype(str).str.zfill(10).tolist()
-print(len(ciks))
-ciks = ciks[:5]
 
 def querymaker(cik):
     query = f"""
