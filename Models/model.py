@@ -37,10 +37,7 @@ mask = X.notna().all(axis=1) & y.notna()
 X = X[mask]; y = y[mask]
 dates = pd.to_datetime(df.loc[mask, "date_a"])
 
-
 df = df[mask]
-
-
 
 '''
 # ===== 3) Time-aware cross-validation =====
@@ -62,6 +59,7 @@ print(f"Test MAE={mae:.4f} | RMSE={rmse:.4f} | R²={r2:.3f}")
 # Optional: see the rules
 print(export_text(tree, feature_names=list(X.columns)))
 '''
+
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.20, shuffle=True, random_state=42
 )

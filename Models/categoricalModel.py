@@ -58,7 +58,6 @@ feature_cols = [
     "inc_len",
     "len_growth_pct",
     "old_similarity",
-    "sim_sum",
     "ret_prev_12m",
 ]
 
@@ -74,6 +73,18 @@ y = y[mask]
 dates = pd.to_datetime(df_clf.loc[mask, "date_a"])
 df_clf = df_clf[mask]
 
+import matplotlib.pyplot as plt
+
+# Use the continuous target, not the class
+ret = df['ret_18'].dropna()
+
+plt.figure(figsize=(8, 5))
+plt.hist(ret, bins=1000)  # adjust bins as needed
+plt.xlabel("18-month return (ret_18)")
+plt.ylabel("Frequency")
+plt.title("Distribution of 18-month returns")
+plt.tight_layout()
+plt.show()
 
 
 
