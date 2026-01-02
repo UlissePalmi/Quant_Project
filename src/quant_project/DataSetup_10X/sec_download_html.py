@@ -3,12 +3,11 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import time
-#import fx_10X_cleaner as fc
-import DataSetup_10X.fx_10X_cleaner as fc
+from quant_project.DataSetup_10X import fx_10X_cleaner as fc
 from sec_edgar_downloader import Downloader
 
 # ---------- SETTINGS ----------
-EXCEL_FILE = Path("master_all_prova.xlsx")      # your merged Excel
+EXCEL_FILE = Path("data") / "tables" / "master_all_prova.xlsx"     # your merged Excel
 FORM       = "10-K"                             # or "10-K", "10-KT", etc.
 LIMIT      = 20                                 # filings per CIK, 20 years go back (2006 - 2025)
 SAVE_DIR   = Path("data/html")

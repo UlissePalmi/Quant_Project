@@ -1,8 +1,13 @@
 import wrds
 import pandas as pd
+from pathlib import Path
+
+# Creates returns.csv file
+
+SAVE_DIR = Path("data") / "tables" / "returns.csv"
 
 # 1. Connect
-db = wrds.Connection(wrds_username='upalmier')
+db = wrds.Connection(wrds_username='username')
 
 df_input = pd.read_excel("master_all.xlsx")
 ciks = df_input['CIK'].astype(str).str.zfill(10).tolist()
@@ -48,4 +53,4 @@ for cik in ciks[1:]:
     except Exception as e:
         print("Error:", e)
 
-df1.to_csv('returns.csv')
+df1.to_csv(SAVE_DIR)

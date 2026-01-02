@@ -1,5 +1,5 @@
 from pathlib import Path
-import fx_splitter_10X as fs
+from quant_project.Splitter_10X import fx_splitter_10X as fs
 from concurrent.futures import ProcessPoolExecutor
 
 def try_exercize(p):

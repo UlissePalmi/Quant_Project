@@ -1,14 +1,18 @@
 import pandas as pd
+from pathlib import Path
 
-sim_df = pd.read_csv('cleanSimData.csv')
-return_df = pd.read_csv('returns.csv')
+# Creates merged_dataset.csv file
 
+sim_DIR = Path("data") / "tables" / "cleanSimData.csv"
+returns_DIR = Path("data") / "tables" / "returns.csv"
+SAVE_DIR = Path("data") / "tables" / "merged_dataset.csv"
 
+sim_df = pd.read_csv(sim_DIR)
+return_df = pd.read_csv(returns_DIR)
       
 sim_df["date_a"] = pd.to_datetime(sim_df["date_a"],format="mixed",dayfirst=True)
 sim_df["date_b"] = pd.to_datetime(sim_df["date_b"],format="mixed",dayfirst=True)
 return_df["date"] = pd.to_datetime(return_df["date"])
-
 
 sim_df["start_anchor"] = (sim_df["date_a"] + pd.offsets.MonthBegin(1)).dt.normalize()
 sim_df['prev_start'] = sim_df['start_anchor'] - pd.DateOffset(years=1)
@@ -19,13 +23,11 @@ return_df['retPlusOne'] = return_df['ret'] + 1
 #print(sim_df)
 #print(return_df)
 
-
 sim_df['ret_18'] = sim_df['ticker'].map(
     return_df
     .groupby('cik')['retPlusOne']
     .mean()
 )
-
 
 sim_tmp = sim_df.reset_index().rename(columns={'index': 'sim_idx'})
 
@@ -80,9 +82,4 @@ sim_df = sim_df.sort_values(['ticker', 'date_a'])
 # Add old_similarity = previous year's similarity for same cik
 sim_df['old_similarity'] = sim_df.groupby('ticker')['similarity'].shift(1)
 
-
-print(merged.head(50))
-print(sim_df.head(50))
-
-
-sim_df.to_csv('merged_dataset.csv')
+sim_df.to_csv(SAVE_DIR)

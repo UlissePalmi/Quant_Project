@@ -1,10 +1,11 @@
 from pathlib import Path
 import csv
-import fx_similarity as sf
+from quant_project.Similarity_10X import fx_similarity as sf
 
 
-SAVE_DIR = Path("data") / "html"
-folders_path = SAVE_DIR / "sec-edgar-filings"
+folder_dir = Path("data") / "html"
+folders_path = folder_dir / "sec-edgar-filings"
+SAVE_DIR = Path("data") / "tables" / "similarity.csv"
 
 if __name__ == "__main__":
 
@@ -16,7 +17,7 @@ if __name__ == "__main__":
         letter = input("Invalid... enter L or T...").lower()
 
     fieldnames = ["ticker", "date_a", "date_b", "distance", "similarity", "len_a", "len_b", "sentiment"]
-    with open("similarity_data.csv", "w", newline="", encoding="utf-8") as f:
+    with open(SAVE_DIR, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -25,4 +26,4 @@ if __name__ == "__main__":
             tickers = [tickers]
         
         for ticker in tickers:
-            sf.concurrency_runner(writer, ticker, SAVE_DIR)
+            sf.concurrency_runner(writer, ticker, folder_dir)

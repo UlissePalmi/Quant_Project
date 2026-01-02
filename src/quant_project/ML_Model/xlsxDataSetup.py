@@ -1,7 +1,13 @@
 import pandas as pd
 import csv
+from pathlib import Path
 
-df = pd.read_excel("complete_similarity_data.xlsx")
+# Creates cleanSimData.csv file
+
+data_folder = Path("data") / "tables" / "complete_similarity_data.xlsx"
+SAVE_DIR = Path("data") / "tables" / "cleanSimData.csv"
+
+df = pd.read_excel(data_folder)
 df = df[(df["len_a"] >= 75) & (df["len_b"] >= 75)]
 print(df)
 df["date_a"] = pd.to_datetime(df["date_a"],format="mixed",dayfirst=True)
@@ -14,5 +20,4 @@ df = df.drop(columns='days')
 #print(days)
 print(df)
 
-
-df.to_csv("cleanSimData.csv")
+df.to_csv(SAVE_DIR)
