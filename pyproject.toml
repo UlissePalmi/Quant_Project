@@ -1,7 +1,29 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "quant-project"
 version = "0.1.0"
-description = "Add your description here"
+description = "Pipeline to download SEC 10-K filings, clean/split sections, compute text similarity features, and train baseline ML models for return prediction."
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = []
+requires-python = ">=3.10,<3.13"
+
+dependencies = [
+  "numpy",
+  "pandas",
+  "requests",
+  "sec-edgar-downloader",
+  "scikit-learn",
+  "matplotlib",
+  "nltk",
+  "openpyxl",
+  "wrds",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff",
+  "pytest",
+  "pytest-cov",
+]

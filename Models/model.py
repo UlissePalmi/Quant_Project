@@ -6,7 +6,6 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 
-from xgboost import XGBRegressor
 
 df = pd.read_csv("merged_dataset.csv")
 

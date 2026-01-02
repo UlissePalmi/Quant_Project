@@ -11,8 +11,8 @@ def try_exercize(p):
     return
 
 if __name__ == "__main__":
-    ticker = "0000008177"
-    filings = "0001140361-13-014090"
+    ticker = "0000010329"
+    filings = "0001437749-18-000767"
     tickerlist = Path("data") / "html" / "sec-edgar-filings"
 
     letter = input("Select List (L) or Enter Ticker (T)...").lower()
