@@ -1,19 +1,21 @@
-# Quant Project — SEC 10-K Text Similarity + Return Prediction Pipeline
+# Risk Factor Predictability
 
-This repository contains a research-style pipeline for:
+This repository provides an end-to-end research pipeline that measures how firms’ 10-K **Risk Factors (Item 1A)** change over time and tests whether those disclosure changes predict stock returns.
 
-1. downloading SEC EDGAR filings (10-K),
-2. cleaning and splitting filings into relevant sections (e.g., Risk Factors / Item 1A),
-3. computing text similarity features across consecutive filings, and
-4. merging features with return data and training baseline ML models.
+## What the pipeline does
 
-The goal is to provide a clean, reproducible coding sample representative of predoc/RA work: data ingestion, feature engineering, careful time handling, and model evaluation.
+1. **Download**: download 10-K filings from SEC EDGAR and store them locally
+2. **Parse & clean**: clean and normalize the entire filing, split it into sections, and isolate Item 1A: Risk Factors for feature construction
+3. **Disclosure comparison**: compute firm-level year-over-year similarity by comparing each firm’s consecutive Item 1A sections
+4. **Dataset build**: merge disclosure-change features with return data to create a model ready panel
+5. **Modeling**: run baseline predictive models and evaluation to quantify whether disclosure changes contain incremental predictive information
 
-## Repository status and scope
 
-- The project is under active development; the core end-to-end path is functional.
-- The code is structured as a Python package under a `src/` layout for reproducible imports and testing.
-- **Data is not committed** (SEC downloads and derived datasets are typically large and/or have usage constraints). A small sample configuration is recommended for reviewers.
+## Notes on scope and reproducibility
+
+- This repository is a research codebase intended for end-to-end reproduction of the pipeline (download → parse → similarity measures → dataset → baseline models).
+- The code follows a `src/` layout to support stable imports and testing; modules are intended to be executed from the repository root.
+- Data artifacts (SEC downloads and derived datasets) are not committed to version control due to size and data-handling constraints. The pipeline writes outputs to `data/` and `outputs/` as described below.
 
 ---
 
@@ -25,12 +27,6 @@ From the repository root:
 
 ```powershell
 uv sync
-```
-
-Sanity check:
-
-```powershell
-uv run python -c "import pandas, numpy, sklearn, requests, nltk, wrds; print('imports ok')"
 ```
 
 ### 2) Run modules (recommended)
