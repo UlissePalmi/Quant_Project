@@ -228,9 +228,3 @@ uv run pytest
 ```
 
 ---
-
-## Suggested next improvements (for a predoc coding sample)
-
-- Add a single `scripts/run_pipeline.py` (or `quant_project/pipeline.py`) that runs the full pipeline via a config.
-- Add a `data/samples/` minimal demo (e.g., 5 CIKs × 2 years) so reviewers can reproduce quickly.
-- Add unit tests for: (i) time split correctness (no leakage), (ii) return aggregation correctness, (iii) deterministic similarity outputs.
