@@ -1,5 +1,5 @@
 from pathlib import Path
-from risk_factor_pred.Splitter_10X import fx_splitter_10X as fs
+from risk_factor_pred.core import fx_splitter_10X as fs
 from concurrent.futures import ProcessPoolExecutor
 
 def try_exercize(p):
