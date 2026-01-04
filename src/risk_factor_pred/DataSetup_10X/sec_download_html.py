@@ -3,18 +3,17 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import time
-from quant_project.DataSetup_10X import fx_10X_cleaner as fc
+from risk_factor_pred.core import fx_10X_cleaner as fc, htmlCleaner
 from sec_edgar_downloader import Downloader
 
 # ---------- SETTINGS ----------
-EXCEL_FILE = Path("data") / "tables" / "master_all_prova.xlsx"     # your merged Excel
-FORM       = "10-K"                             # or "10-K", "10-KT", etc.
-LIMIT      = 20                                 # filings per CIK, 20 years go back (2006 - 2025)
+EXCEL_FILE = Path("data/tables") / "master_all_prova.xlsx"      # your merged Excel
+FORM       = "10-K"                                                 # or "10-K", "10-KT", etc.
+LIMIT      = 20                                                     # filings per CIK, 20 years go back (2006 - 2025)
 SAVE_DIR   = Path("data/html")
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
-MAX_WORKERS = 4                                 # number of threads
+MAX_WORKERS = 4                                                     # number of threads
 # -------------------------------
-
 
 def load_unique_ciks():
     df = pd.read_excel(EXCEL_FILE)
@@ -36,7 +35,7 @@ def download_for_cik(cik: str):
         padded_cik = str(cik.zfill(10))
         print(padded_cik)
         fc.delete_cik_pre2006(cutoff_year=2006, cik=padded_cik)
-        fc.cleaner(padded_cik, output_filename = "clean-full-submission.txt")
+        htmlCleaner.cleaner(padded_cik, output_filename = "clean-full-submission.txt")
         fc.del_full_submission_files(padded_cik)
         return cik, "ok", None
     except ValueError as e:

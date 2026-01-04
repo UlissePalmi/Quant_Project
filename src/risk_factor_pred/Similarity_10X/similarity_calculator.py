@@ -1,6 +1,6 @@
 from pathlib import Path
 import csv
-from quant_project.Similarity_10X import fx_similarity as sf
+from risk_factor_pred.Similarity_10X import fx_similarity as sf
 
 
 folder_dir = Path("data") / "html"

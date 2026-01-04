@@ -8,7 +8,7 @@ import os
 # --------------------------------------------------------------------------------------------------------------------
 #                                              REGEX FOR HTML CLEANING
 # --------------------------------------------------------------------------------------------------------------------
-
+'''
 
 def remove_xbrl_xml_blocks(html_content): # Removes entire XBRL/XML blocks and individual XBRL tags from HTML content.
     pattern_blocks = re.compile(r'(<XBRL.*?>.*?</XBRL>)|(<XML.*?>.*?</XML>)', re.DOTALL)
@@ -223,7 +223,7 @@ def clean_html(file_content):
     cleaned = soft_unwrap_html_lines(file_content)
     cleaned = get_from_sec_document(cleaned)
     
-    cleaned = get_content_before_sequence(cleaned)                     # cuts after <SEQUENCE>2
+    cleaned = get_content_before_sequence(cleaned)                          # cuts after <SEQUENCE>2
     cleaned = remove_head_with_regex(cleaned)
     
     cleaned = remove_style_with_regex(cleaned)
@@ -369,10 +369,19 @@ def cleaner(ticker, output_filename):
         print_10X(full_path, html_content, output_filename)
     return
 
-
+'''
 # --------------------------------------------------------------------------------------------------------------------
 #                                                ?RENAMING FILES?
 # --------------------------------------------------------------------------------------------------------------------
+def get_from_sec_document(html_content: str) -> str:
+    pattern = re.compile(r'<SEC-DOCUMENT>.*\Z', re.DOTALL)
+    match = re.search(pattern, html_content)
+    return match.group(0) if match else html_content
+
+def strip_all_html_tags(html_content): # Removes all HTML tags from a string.
+    pattern = re.compile(r'<.*?>')
+    clean_text = re.sub(pattern, '', html_content)
+    return clean_text
 
 
 def extract_first_line(filepath) -> str | None:

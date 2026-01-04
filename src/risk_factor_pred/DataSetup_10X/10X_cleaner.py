@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from . import fx_10X_cleaner as fc
+from ..core import fx_10X_cleaner as fc
 from itertools import repeat
 from concurrent.futures import ProcessPoolExecutor
 
