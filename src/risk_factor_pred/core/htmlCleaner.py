@@ -262,8 +262,6 @@ def cleaning_items(html_content):
     html_content = merge_item_with_number_line(html_content)
     return merge_item_number_with_suffix(html_content)
 
-
-
 def merge_I_tem(content: str) -> str: # Finds lines with 'I' & next line starts with 'tem' then merge them
     lines = content.splitlines()  # split into lines without keeping '\n'
     new_lines = []
@@ -347,17 +345,14 @@ def merge_item_number_with_suffix(text: str) -> str:
         i += 1
     return "\n".join(new_lines)
 
-
 # --------------------------------------------------------------------------------------------------------------------
-#                                              REGEX FOR HTML CLEANING
+#                                              MERGES THE FUNCTIONS
 # --------------------------------------------------------------------------------------------------------------------
-
 
 def print_10X(full_path, html_content, output_filename):
     with open(full_path, "w", encoding='utf-8') as new_file:
         new_file.write(html_content)
     print("\nCleaned content saved in {}".format(output_filename))
-
 
 def cleaner(ticker, output_filename):
     folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"

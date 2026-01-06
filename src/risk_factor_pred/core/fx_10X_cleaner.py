@@ -373,6 +373,7 @@ def cleaner(ticker, output_filename):
 # --------------------------------------------------------------------------------------------------------------------
 #                                                ?RENAMING FILES?
 # --------------------------------------------------------------------------------------------------------------------
+
 def get_from_sec_document(html_content: str) -> str:
     pattern = re.compile(r'<SEC-DOCUMENT>.*\Z', re.DOTALL)
     match = re.search(pattern, html_content)
@@ -397,73 +398,6 @@ def name_10X(ticker, document, html_content):
     end_name = f"{end_name[:4]}-{end_name[4:6]}-{end_name[6:]}"
     return f"{ticker}_{document}_{end_name}.txt"
 
-
 # --------------------------------------------------------------------------------------------------------------------
 #                                                SPACE CLEANER
 # --------------------------------------------------------------------------------------------------------------------
-
-
-def delete_cik_pre2006(cutoff_year, cik) -> List[Path]:
-    pattern = re.compile(r"^\d{10}-(\d{2})-\d{6}$")
-    folder = Path("data") / "html" / "sec-edgar-filings" / cik / "10-K"
-    print(folder)
-    if not os.path.exists(folder):
-        print("skipped pre 2006")
-        return
-
-    matches = []
-
-    for p in folder.iterdir():
-        m = pattern.match(p.name)
-        yy = int(m.group(1))
-        year = 1900 + yy if yy >= 70 else 2000 + yy
-        if year < cutoff_year:
-            matches.append(p)
-            print(f"Deleting: {p} (year={year})")
-            shutil.rmtree(p)
-
-def del_full_submission_files(cik):
-    folder = Path("data") / "html" / "sec-edgar-filings" / cik / "10-K"
-    count = 0
-
-    for path in folder.rglob("full-submission.txt"):
-        count += 1
-        print(f"Deleting: {path}")
-        path.unlink()  # delete the file
-
-    print(f"\nTotal {'deleted'}: {count}")
-    return
-
-# --------------------------------------------------------------------------------------------------------------------
-
-def delete_folders_pre2006(root_dir: str, cutoff_year) -> List[Path]:
-
-    pattern = re.compile(r"^\d{10}-(\d{2})-\d{6}$")
-    root = Path("data") / "html" / "sec-edgar-filings"          # "data"
-    matches = []
-
-    for path in root.iterdir():
-        folder = path / "10-K"
-        for p in folder.iterdir():
-            m = pattern.match(p.name)
-            yy = int(m.group(1))
-            year = 1900 + yy if yy >= 70 else 2000 + yy
-            if year < cutoff_year:
-                matches.append(p)
-                print(f"Deleting: {p} (year={year})")
-                shutil.rmtree(p)
-
-    print(f"\nTotal folders before {cutoff_year}: {len(matches)}")
-    return
-
-def delete_full_submission_files(root_dir):
-    root = Path(root_dir)
-    count = 0
-
-    for path in root.rglob("full-submission.txt"):
-        count += 1
-        print(f"Deleting: {path}")
-        path.unlink()  # delete the file
-
-    print(f"\nTotal {'deleted'}: {count}")
-    return
