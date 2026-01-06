@@ -1,14 +1,17 @@
-import os
+#import os
 from pathlib import Path
+
+# ------------------ Directories ------------------ 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]                             # Returns absolute path of risk_factor_pred folder
 DATA_DIR = REPO_ROOT / "data"
 
 HTML_DIR = DATA_DIR / "html"
+HTML_DIR.mkdir(parents=True, exist_ok=True)
 SEC_DIR = HTML_DIR / "sec-edgar-filings"
 
 TABLES_DIR = DATA_DIR / "tables"
-CIK_LIST = TABLES_DIR / "cik_list.xlsx"                # Excel containing list of CIKS
+CIK_LIST = TABLES_DIR / "cik_list.xlsx"                                     # Excel containing list of CIKS
 
 
 

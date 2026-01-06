@@ -1,6 +1,5 @@
-from sec_edgar_downloader import Downloader
+from risk_factor_pred.consts import SEC_DIR
 import re
-from pathlib import Path
 from typing import List
 import os
 
@@ -355,7 +354,7 @@ def print_10X(full_path, html_content, output_filename):
     print("\nCleaned content saved in {}".format(output_filename))
 
 def cleaner(ticker, output_filename):
-    folders_path = Path("data") / "html" / "sec-edgar-filings" / ticker / "10-K"
+    folders_path = SEC_DIR / ticker / "10-K"
     for p in folders_path.iterdir():
         print(p)
         full_path = os.path.join(p, output_filename)

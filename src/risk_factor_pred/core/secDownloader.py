@@ -1,22 +1,22 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import threading
+from risk_factor_pred.consts import FORM, START_DATE, MAX_WORKERS, HTML_DIR, CIK_LIST
 import time
 import pandas as pd
 from . import htmlCleaner
 from sec_edgar_downloader import Downloader
 
-def load_unique_ciks(EXCEL_FILE):
-    df = pd.read_excel(EXCEL_FILE)
+def load_unique_ciks():
+    df = pd.read_excel(CIK_LIST)
     ciks = df["CIK"].astype(str).str.strip()
     return ciks.tolist()
 
-def download_for_cik(cik: str, SAVE_DIR, StartDate, FORM):
+def download_for_cik(cik: str):
     # tiny delay so we don't hammer SEC (can tune this)
     time.sleep(0.1)
-    dl = Downloader("MyCompanyName", "my.email@domain.com", str(SAVE_DIR))
+    dl = Downloader("MyCompanyName", "my.email@domain.com", str(HTML_DIR))
     print(f"Starting {FORM} for CIK {cik}")
     try:
-        dl.get(FORM, cik, after=StartDate)
+        dl.get(FORM, cik, after=START_DATE)
         time.sleep(10)
         return cik, "ok", None
     except ValueError as e:
@@ -24,14 +24,12 @@ def download_for_cik(cik: str, SAVE_DIR, StartDate, FORM):
     except Exception as e:
         return cik, "error", str(e)
 
-def download_n_clean(cik, save_dir, start_date, form):
-    tuple = download_for_cik(cik, save_dir, start_date, form)
-    padded_cik = str(cik.zfill(10))
-    htmlCleaner.cleaner(padded_cik, output_filename = "full-submission.txt")
+def workerTasks(cik):
+    tuple = download_for_cik(cik) 
+    htmlCleaner.cleaner(str(cik.zfill(10)), output_filename = "full-submission.txt")
     return tuple
 
-def lista(ciks, SAVE_DIR, StartDate, FORM, MAX_WORKERS):
-
+def download_n_clean(ciks):
     total = len(ciks)
     print(f"Found {total} unique CIKs")
 
@@ -39,9 +37,8 @@ def lista(ciks, SAVE_DIR, StartDate, FORM, MAX_WORKERS):
     errors = []
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {executor.submit(download_n_clean, cik=cik, save_dir=SAVE_DIR, start_date=StartDate, form=FORM): cik for cik in ciks}
+        futures = {executor.submit(workerTasks, cik=cik): cik for cik in ciks}
 
-        print(SAVE_DIR)
         # as_completed lets them run in parallel; we consume results as they finish
         for idx, future in enumerate(as_completed(futures), start=1):
             cik, status, err = future.result()

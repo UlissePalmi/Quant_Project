@@ -16,4 +16,4 @@ if __name__ == "__main__":
         writer.writeheader()
 
         for cik in ciks:
-            sf.concurrency_runner(writer, cik, HTML_DIR)
+            sf.concurrency_runner(writer, cik)

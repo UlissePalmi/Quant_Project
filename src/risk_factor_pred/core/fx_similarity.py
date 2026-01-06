@@ -1,14 +1,13 @@
-from pathlib import Path
 from itertools import repeat
 from concurrent.futures import ProcessPoolExecutor
 from nltk.sentiment import SentimentIntensityAnalyzer
+from risk_factor_pred.consts import SEC_DIR
 import nltk
 import sys
 import re
 
 nltk.download("vader_lexicon", quiet=True)
 _sia = SentimentIntensityAnalyzer()
-
 
 # --------------------------------------------------------------------------------------------------------------------
 #                                                MAKE COMPS FUNCTIONS
@@ -60,50 +59,37 @@ def make_comps(ordered_filings, date_data):
         n2 = n2 + 1
     return comps_list
 
-def prepare_data(ticker, SAVE_DIR):
+def prepare_data(ticker):
     date_data = []
-    folders_path = SAVE_DIR / "sec-edgar-filings" / ticker / "10-K"
+    folders_path = SEC_DIR / ticker / "10-K"
     for i in folders_path.iterdir():
-        if (Path(i) / "item1A.txt").is_file():
+        if (i / "item1A.txt").is_file():
             filing = i.name
             date_data.append(check_date(i, filing))
     ordered_filings = order_filings(date_data)
     comps_list = make_comps(ordered_filings, date_data)                                 # List of dictionary
     return comps_list
 
-def process_comps(comps, ticker, SAVE_DIR):
+def process_comps(comps, ticker):
     filings = comps["filing1"]
     filings2 = comps["filing2"]
-    file = SAVE_DIR / "sec-edgar-filings" / ticker / "10-K" / filings / "item1A.txt"
-    file2 = SAVE_DIR / "sec-edgar-filings" / ticker / "10-K" / filings2 / "item1A.txt"
+    file = SEC_DIR / ticker / "10-K" / filings / "item1A.txt"
+    file2 = SEC_DIR / ticker / "10-K" / filings2 / "item1A.txt"
     text = file.read_text(encoding="utf-8", errors="ignore")
     text2 = file2.read_text(encoding="utf-8", errors="ignore")
     return min_edit_similarity(text, text2, comps, ticker)
 
-def concurrency_runner(writer, ticker, SAVE_DIR):
+def concurrency_runner(writer, ticker):
     try:
-        ordered_data = prepare_data(ticker, SAVE_DIR)
+        ordered_data = prepare_data(ticker)
         model = []
         print("funzia")
         with ProcessPoolExecutor(max_workers=3) as executor:
-            model = list(executor.map(process_comps, ordered_data, repeat(ticker), repeat(SAVE_DIR)))
+            model = list(executor.map(process_comps, ordered_data, repeat(ticker)))
             writer.writerows(model)
     except:
         print("Skipped")
 
-
-
-'''
-def concurrency_runner(writer, ticker, max_workers, SAVE_DIR):
-    try:
-        ordered_data = prepare_data(ticker, SAVE_DIR)
-        model = []
-        with ProcessPoolExecutor(max_workers) as executor:
-            model = list(executor.map(process_comps, ordered_data, repeat(ticker), repeat(SAVE_DIR)))
-            writer.writerows(model)
-    except:
-        print("Skipped")
-'''
 
 
 # --------------------------------------------------------------------------------------------------------------------
