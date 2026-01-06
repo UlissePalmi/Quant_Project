@@ -2,9 +2,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import time
 import pandas as pd
-from risk_factor_pred.core import htmlCleaner
+from . import htmlCleaner
 from sec_edgar_downloader import Downloader
-from pathlib import Path
 
 def load_unique_ciks(EXCEL_FILE):
     df = pd.read_excel(EXCEL_FILE)
@@ -25,8 +24,8 @@ def download_for_cik(cik: str, SAVE_DIR, StartDate, FORM):
     except Exception as e:
         return cik, "error", str(e)
 
-def download_n_clean(cik, SAVE_DIR, StartDate, FORM):
-    tuple = download_for_cik(cik, SAVE_DIR, StartDate, FORM)
+def download_n_clean(cik, save_dir, start_date, form):
+    tuple = download_for_cik(cik, save_dir, start_date, form)
     padded_cik = str(cik.zfill(10))
     htmlCleaner.cleaner(padded_cik, output_filename = "full-submission.txt")
     return tuple
@@ -42,6 +41,7 @@ def lista(ciks, SAVE_DIR, StartDate, FORM, MAX_WORKERS):
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {executor.submit(download_n_clean, cik=cik, save_dir=SAVE_DIR, start_date=StartDate, form=FORM): cik for cik in ciks}
 
+        print(SAVE_DIR)
         # as_completed lets them run in parallel; we consume results as they finish
         for idx, future in enumerate(as_completed(futures), start=1):
             cik, status, err = future.result()
