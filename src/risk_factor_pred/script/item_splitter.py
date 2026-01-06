@@ -1,9 +1,9 @@
 from pathlib import Path
-from risk_factor_pred.core import fx_splitter_10X as fs
+from risk_factor_pred.core import fx_splitter_10X as fs, secDownloader as sd
 from concurrent.futures import ProcessPoolExecutor
 
 def try_exercize(p):
-    filepath = p / "clean-full-submission.txt"
+    filepath = p / "full-submission.txt"
     try:
         fs.version2(filepath, p)
     except:
@@ -13,13 +13,10 @@ def try_exercize(p):
 if __name__ == "__main__":
     ticker = "0000010329"
     filings = "0001437749-18-000767"
+
     tickerlist = Path("data") / "html" / "sec-edgar-filings"
 
-    letter = input("Select List (L) or Enter Ticker (T)...").lower()
-    while letter != 'l' and letter != 't':
-        letter = input("Invalid... enter L or T...").lower()
-
-    if letter == 'l':
+    if sd.inputLetter() == 'l':
         paths = []
         for s in tickerlist.iterdir():
             if s.is_dir():

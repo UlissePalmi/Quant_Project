@@ -62,3 +62,9 @@ def lista(ciks, SAVE_DIR, StartDate, FORM, MAX_WORKERS):
         for cik, err in errors:
             print(f" {cik}: {err}")
     return
+
+def inputLetter():
+    letter = input("Select List (L) or Enter Ticker (T)...").lower()
+    while letter != 'l' and letter != 't':
+        letter = input("Invalid... enter L or T...").lower()
+    return letter

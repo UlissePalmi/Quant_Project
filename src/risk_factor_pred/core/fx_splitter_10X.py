@@ -134,10 +134,6 @@ def version2(filepath, p):
     print_items(filepath, final_split, p)
     time.sleep(0.5)
 
-
-
-
-
 def try_exercize(p):
     filepath = p / "clean-full-submission.txt"
     try:
