@@ -6,12 +6,17 @@ from . import htmlCleaner
 from sec_edgar_downloader import Downloader
 
 def load_unique_ciks():
+    """
+    Load a list of CIKs from the Excel file specified in `CIK_LIST`.
+    """
     df = pd.read_excel(CIK_LIST)
     ciks = df["CIK"].astype(str).str.strip()
     return ciks.tolist()
 
 def download_for_cik(cik: str):
-    # tiny delay so we don't hammer SEC (can tune this)
+    """
+    Download SEC filings for a given CIK using `sec-edgar-downloader`.
+    """
     time.sleep(0.1)
     dl = Downloader("MyCompanyName", "my.email@domain.com", str(HTML_DIR))
     print(f"Starting {FORM} for CIK {cik}")
@@ -25,11 +30,26 @@ def download_for_cik(cik: str):
         return cik, "error", str(e)
 
 def workerTasks(cik):
+    """
+    Execute the per-CIK workflow: download filings and then clean them.
+
+    Steps:
+      1) download filings for the CIK (via `download_for_cik`),
+      2) zero-pad the CIK to 10 digits,
+      3) invoke the HTML cleaning routine to produce a cleaned text file.
+    """
     tuple = download_for_cik(cik) 
     htmlCleaner.cleaner(str(cik.zfill(10)), output_filename = "full-submission.txt")
     return tuple
 
 def download_n_clean(ciks):
+    """
+    Download and clean filings for a collection of CIKs using multithreading.
+
+    The function submits one task per CIK to a ThreadPoolExecutor and consumes
+    results as tasks finish using `as_completed`. It prints a progress counter
+    and summarizes not-found CIKs and errors at the end.
+    """
     total = len(ciks)
     print(f"Found {total} unique CIKs")
 
@@ -61,6 +81,13 @@ def download_n_clean(ciks):
     return
 
 def inputLetter():
+    """
+    Prompt the user to choose between using a saved CIK list or entering a single CIK.
+
+    The function repeatedly prompts until the user enters either:
+      - 'l' (use list), or
+      - 't' (enter ticker/CIK manually).
+    """
     letter = input("Select List (L) or Enter Ticker (T)...").lower()
     while letter != 'l' and letter != 't':
         letter = input("Invalid... enter L or T...").lower()

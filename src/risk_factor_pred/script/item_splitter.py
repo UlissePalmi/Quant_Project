@@ -1,4 +1,3 @@
-from pathlib import Path
 from risk_factor_pred.core import fx_splitter_10X as fs, secDownloader as sd
 from risk_factor_pred.consts import SEC_DIR
 from concurrent.futures import ProcessPoolExecutor

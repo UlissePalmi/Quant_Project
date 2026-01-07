@@ -7,14 +7,30 @@ import os
 #                                              REGEX FOR HTML CLEANING
 # --------------------------------------------------------------------------------------------------------------------
 
-def remove_xbrl_xml_blocks(html_content): # Removes entire XBRL/XML blocks and individual XBRL tags from HTML content.
+def remove_xbrl_xml_blocks(html_content):
+    """
+    This function deletes:
+      - entire <XBRL>...</XBRL> or <XML>...</XML> blocks,
+      - individual inline XBRL tags like <ix:...> or </ix:...>.
+    """
     pattern_blocks = re.compile(r'(<XBRL.*?>.*?</XBRL>)|(<XML.*?>.*?</XML>)', re.DOTALL)
     pattern_tags = re.compile(r'</?ix:.*?>')
     clean_content = re.sub(pattern_blocks, '', html_content)
     clean_content = re.sub(pattern_tags, '', clean_content)
     return clean_content
 
-def _ends_with_tag(piece: str) -> bool: # Checks if line end with html tag
+def _ends_with_tag(piece: str) -> bool:
+    """
+    Heuristically determine whether a text fragment ends with an HTML tag.
+
+    The check:
+      - trims trailing whitespace,
+      - confirms the string ends with '>',
+      - searches the last up to 300 characters for the most recent '<',
+      - ensures there is no newline between that '<' and the end.
+
+    Returns True if the fragment likely ends with an HTML tag, otherwise False.
+    """
     s = piece.rstrip()
     if not s.endswith(">"):
         return False
@@ -22,10 +38,22 @@ def _ends_with_tag(piece: str) -> bool: # Checks if line end with html tag
     i = tail.rfind("<")
     return i != -1 and "\n" not in tail[i:]
 
-def _starts_with_tag(line: str) -> bool: # Checks if line starts with html tag
+def _starts_with_tag(line: str) -> bool:
+    """
+    Returns True if the first non-whitespace character is '<', else False.
+    """
     return line.lstrip().startswith("<")
 
 def soft_unwrap_html_lines(html: str) -> str: # Removes /n if sentence is ongoing
+    """
+    Join lines that appear to be mid-sentence.
+
+    Lines are joined when:
+      - the current logical line does NOT end with an HTML tag, AND
+      - the next line does NOT start with an HTML tag.
+
+    When joining, the function enforces exactly one space at the boundary.
+    """
     lines = html.splitlines()
     if not lines:
         return html
@@ -58,27 +86,46 @@ def soft_unwrap_html_lines(html: str) -> str: # Removes /n if sentence is ongoin
     out_lines.append("".join(parts))
     return "\n".join(out_lines)
 
-def remove_head_with_regex(html_content): # Uses regex to remove the <head> section.
+def remove_head_with_regex(html_content):
+    """
+    Remove the <head>...</head> section from HTML content.
+    """
     pattern = re.compile(r'<head>.*?</head>', re.DOTALL | re.IGNORECASE)
     clean_content = re.sub(pattern, '', html_content)
     return clean_content
 
-def remove_style_with_regex(html_content): # Uses regex to remove the 'style' attribute from all tags.
+def remove_style_with_regex(html_content):
+    """
+    Strip inline 'style' attributes from all HTML tags.
+    """
     pattern = re.compile(r'\sstyle=(["\']).*?\1', re.IGNORECASE)
     clean_content = re.sub(pattern, '', html_content)
     return clean_content
 
-def remove_id_with_regex(html_content):  # Uses regex to remove the 'id' attribute from all tags
+def remove_id_with_regex(html_content):
+    """
+    Strip 'id' attributes from all HTML tags.
+    """
     pattern = re.compile(r'\s+id=(["\']).*?\1', re.IGNORECASE)
     clean_content = re.sub(pattern, '', html_content)
     return clean_content
 
-def remove_align_with_regex(html_content):  # Uses regex to remove the 'id' attribute from all tags
+def remove_align_with_regex(html_content):
+    """
+    Strip 'align' attributes from all HTML tags.
+    """
     pattern = re.compile(r'\s+align=(["\']).*?\1', re.IGNORECASE)
     clean_content = re.sub(pattern, '', html_content)
     return clean_content
 
 def remove_part_1(html_content): # Cleans comments, tables, img, span
+    """
+    Operations performed:
+      - remove HTML comments <!-- ... -->,
+      - remove <img ...> tags,
+      - replace certain HTML entities with ASCII equivalents,
+      - remove numeric character references of the form '&#ddd;'.
+    """
     pattern = re.compile(r'<!--.*?-->', re.DOTALL)
     html_content = re.sub(pattern, '', html_content)
     
@@ -94,6 +141,9 @@ def remove_part_1(html_content): # Cleans comments, tables, img, span
     return html_content
 
 def loop_clean(html_content):
+    """
+    Iteratively remove empty <p>...</p> and <div>...</div> tags until stable.
+    """
     p_pattern = re.compile(r'<p>\s*</p>', re.DOTALL | re.IGNORECASE)
     div_pattern = re.compile(r'<div>\s*</div>', re.IGNORECASE)
     while True:
@@ -108,9 +158,17 @@ def loop_clean(html_content):
     return html_content
 
 def remove_numeric_entities(s: str) -> str:
+    """
+    Remove numeric HTML entities such as '&#123;' or '&#x1F4A9;'.
+    """
     return re.sub(r'&#(?:\d{1,8}|[xX][0-9A-Fa-f]{1,8});', '', s)
 
 def unwrap_tags(html_content): # Removes matching <ix...> and </ix...> tags but keeps the content between them.
+    """
+    This function removes/replaces a set of tags commonly found in SEC filings,
+    inserting newlines for structural tags and deleting closing tags. It also
+    removes table-related tags (<table>, <tr>, <td>) by converting some to newlines.
+    """
     pattern = re.compile(r'<ix:[a-zA-Z0-9_:]+.*?>', re.IGNORECASE)
     html_content = re.sub(pattern, '\n', html_content)
 
@@ -174,35 +232,56 @@ def unwrap_tags(html_content): # Removes matching <ix...> and </ix...> tags but 
     return html_content
 
 def clean_lines(text_content): # Removes all lines that are empty/contain only whitespace and removes leading whitespace from the remaining lines
+    """
+    Drop empty lines and removes all leading and trailing whitespace.
+    """
     cleaned_lines = [line.lstrip() for line in text_content.splitlines() if line.strip()]
     return '\n'.join(cleaned_lines)
 
 def prepend_newline_to_p(html_content): # Finds every <p> tag and inserts a newline character before it
+    """
+    Insert a newline before every <p ...> tag to improve downstream line-based parsing.
+    """
     pattern = re.compile(r'<p.*?>', re.IGNORECASE)
     processed_text = re.sub(pattern, r'\n\g<0>', html_content)    
     return processed_text
 
 def strip_all_html_tags(html_content): # Removes all HTML tags from a string.
+    """
+    Remove all HTML tags by deleting substrings matching '<...>'.
+    """
     pattern = re.compile(r'<.*?>')
     clean_text = re.sub(pattern, '', html_content)
     return clean_text
 
 def remove_xbrli_measure(html_content): # Uses regex to find and remove the entire <xbrli:measure> ... </xbrli:measure> block.
+    """
+    Remove <xbrli:*>...</xbrli:*> blocks (e.g., <xbrli:measure>...</xbrli:measure>).
+    """
     pattern = re.compile(r'<xbrli:([a-zA-Z0-9_:]+).*?>.*?</xbrli:\1>', re.DOTALL | re.IGNORECASE)
     html_content = re.sub(pattern, '', html_content)
     return html_content
 
 def get_from_sec_document(html_content: str) -> str:
+    """
+    Trim content to start at the <SEC-DOCUMENT> marker if present.
+    """
     pattern = re.compile(r'<SEC-DOCUMENT>.*\Z', re.DOTALL)
     match = re.search(pattern, html_content)
     return match.group(0) if match else html_content
 
 def get_content_before_sequence(html_content):
+    """
+    Keep content before the '<SEQUENCE>2' marker, if present.
+    """
     pattern = re.compile(r'^.*?(?=<SEQUENCE>2)', re.DOTALL)
     match = re.search(pattern, html_content)
     return match.group() if match else html_content
 
-def break_on_item_heads(text: str) -> str: # Inserts \n before each item
+def break_on_item_heads(text: str) -> str:
+    """
+    Insert a newline before detected 'Item <number>[suffix].' headings.
+    """
     _HEAD_DETECT = re.compile(r'\s*item\b\s*\d+[A-Za-z]?\s*\.', re.IGNORECASE)
     out = []
     last = 0
@@ -217,6 +296,9 @@ def break_on_item_heads(text: str) -> str: # Inserts \n before each item
     return re.sub(r'[ \t]+\n', '\n', s)  # tidy spaces before newlines
 
 def clean_html(file_content):
+    """
+    Perform end-to-end HTML-to-text cleaning for SEC filing content.
+    """
     cleaned = soft_unwrap_html_lines(file_content)
     cleaned = get_from_sec_document(cleaned)
     
@@ -242,6 +324,9 @@ def clean_html(file_content):
     return cleaned
 
 def print_clean_txt(html_content):
+    """
+    Load a filing, clean it, and return the cleaned text.
+    """
     try:
         with open(html_content, 'r', encoding='utf-8') as file:
             file_content = file.read()
@@ -256,12 +341,23 @@ def print_clean_txt(html_content):
 # --------------------------------------------------------------------------------------------------------------------
 
 def cleaning_items(html_content):
+    """
+    Normalize broken 'Item' headings that are split across lines.
+    """
     html_content = merge_I_tem(html_content)
     html_content = ensure_space_after_item(html_content)
     html_content = merge_item_with_number_line(html_content)
     return merge_item_number_with_suffix(html_content)
 
 def merge_I_tem(content: str) -> str: # Finds lines with 'I' & next line starts with 'tem' then merge them
+    """
+    Merge cases where 'I' appears alone on a line and the next line starts with 'tem'.
+
+    Example:
+      Line i:   "I"
+      Line i+1: "tem 1. Business"
+      -> "Item 1. Business"
+    """
     lines = content.splitlines()  # split into lines without keeping '\n'
     new_lines = []
     i = 0
@@ -281,11 +377,24 @@ def merge_I_tem(content: str) -> str: # Finds lines with 'I' & next line starts 
             i += 1
     return "\n".join(new_lines)
 
-def ensure_space_after_item(text: str) -> str:  # Ensures every 'Item'/'Items' is followed by a space
+def ensure_space_after_item(text: str) -> str:
+    """
+    Ensure 'Item' or 'Items' is followed by a space when immediately followed by non-space.
+
+    Example:
+      'Item1A' -> 'Item 1A'
+    """
     return re.sub(r'\b(Items?)\b(?=\S)', r'\1 ', text)
 
-
 def merge_item_with_number_line(text: str) -> str: # If a line is just 'Item'/'Items' and the following line starts with a number merges them
+    """
+    Merge lines where 'Item'/'Items' is on its own line and the next line begins with a digit.
+
+    Example:
+      "Item"
+      "1. Business"
+      -> "Item 1. Business"
+    """
     lines = text.splitlines()
     new_lines = []
     i = 0
@@ -349,11 +458,24 @@ def merge_item_number_with_suffix(text: str) -> str:
 # --------------------------------------------------------------------------------------------------------------------
 
 def print_10X(full_path, html_content, output_filename):
+    """
+    Write cleaned filing text to disk.
+    """
     with open(full_path, "w", encoding='utf-8') as new_file:
         new_file.write(html_content)
     print("\nCleaned content saved in {}".format(output_filename))
 
 def cleaner(ticker, output_filename):
+    """
+    Clean all downloaded 10-K filings for a given ticker/CIK folder and write outputs.
+
+    This function:
+      - locates the 10-K folder under SEC_DIR/<ticker>/10-K,
+      - iterates over subdirectories (each filing),
+      - reads 'full-submission.txt',
+      - runs HTML cleaning + item-heading normalization,
+      - writes the cleaned text to `output_filename` inside each filing directory.
+    """
     folders_path = SEC_DIR / ticker / "10-K"
     for p in folders_path.iterdir():
         print(p)

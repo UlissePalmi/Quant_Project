@@ -15,7 +15,36 @@ _sia = SentimentIntensityAnalyzer()
 
 
 def check_date(folder, filing):
-    file = folder / "clean-full-submission.txt"
+    """
+    Extract the filing date for a given filing folder by scanning `full-submission.txt`.
+
+    The function reads `folder/full-submission.txt` line-by-line and searches for the
+    substring `filing` (case-insensitive). When it finds a matching line, it parses
+    the portion after ':' and interprets it as a YYYYMMDD-like string.
+
+    Parameters
+    ----------
+    folder : pathlib.Path
+        Path to a single filing directory (e.g., SEC_DIR/<ticker>/10-K/<filing_id>).
+    filing : str
+        Filing identifier, typically the directory name (used as the search key).
+
+    Returns
+    -------
+    dict
+        Dictionary with keys:
+          - "year", "month", "day": extracted date components (strings),
+          - "filing": the filing identifier provided.
+
+    Raises
+    ------
+    FileNotFoundError
+        If `full-submission.txt` is not present.
+    UnboundLocalError
+        If no line matches `filing` and `date` is never set.
+        (You may want to initialize `date = ""` or raise a clearer error.)
+    """
+    file = folder / "full-submission.txt"
     with open(file, "r", encoding="utf-8", errors="replace") as f:
         for line in f:
             hay = line.lower()
@@ -31,6 +60,19 @@ def check_date(folder, filing):
     return info_dict
 
 def order_filings(records):
+    """
+    Sort filing metadata records in reverse chronological order and return filing IDs.
+
+    Parameters
+    ----------
+    records : list[dict]
+        Each dict must include "year", "month", "day" and "filing" keys.
+
+    Returns
+    -------
+    list[str]
+        Filing identifiers ordered from most recent to oldest.
+    """
     records_sorted = sorted(
         records,
         key=lambda r: (int(r["year"]), int(r["month"]), int(r["day"])),
@@ -39,6 +81,33 @@ def order_filings(records):
     return [r["filing"] for r in records_sorted]
 
 def make_comps(ordered_filings, date_data):
+    """
+    Build a list of consecutive filing comparisons (t vs t-1) for a ticker.
+
+    Given filings ordered from most recent to oldest, the function pairs
+    (filing[0], filing[1]), (filing[1], filing[2]), ..., and attaches the
+    corresponding filing dates in YYYY-MM-DD format.
+
+    Parameters
+    ----------
+    ordered_filings : list[str]
+        Filing IDs ordered from most recent to oldest.
+    date_data : list[dict]
+        Output of `check_date` / metadata dictionaries containing date components.
+
+    Returns
+    -------
+    list[dict]
+        Each element includes:
+          - "date1", "filing1": newer filing date/ID
+          - "date2", "filing2": older filing date/ID
+
+    Notes
+    -----
+    This implementation currently searches `date_data` linearly for every pair,
+    which is O(n^2) in the number of filings. Converting `date_data` to a dict
+    keyed by filing ID would make it O(n).
+    """
     comps_list = []
     n1 = 0
     n2 = 1
@@ -60,6 +129,27 @@ def make_comps(ordered_filings, date_data):
     return comps_list
 
 def prepare_data(ticker):
+    """
+    Prepare consecutive 10-K Item 1A comparison pairs for a given ticker.
+
+    The function scans SEC_DIR/<ticker>/10-K/* and keeps only filings that
+    contain an extracted `item1A.txt`. It then orders filings by date and
+    constructs consecutive pairwise comparisons.
+
+    Parameters
+    ----------
+    ticker : str
+        Ticker/CIK folder name under SEC_DIR.
+
+    Returns
+    -------
+    list[dict]
+        List of comparison dictionaries produced by `make_comps`.
+
+    Side Effects
+    ------------
+    Reads filing metadata from `full-submission.txt` to infer dates.
+    """
     date_data = []
     folders_path = SEC_DIR / ticker / "10-K"
     for i in folders_path.iterdir():
@@ -71,6 +161,31 @@ def prepare_data(ticker):
     return comps_list
 
 def process_comps(comps, ticker):
+    """
+    Compute similarity metrics for a single consecutive filing comparison.
+
+    Loads `item1A.txt` for two filings (newer vs older) and computes token-level
+    Levenshtein distance, similarity, and sentiment statistics for newly introduced
+    words (relative to the older filing).
+
+    Parameters
+    ----------
+    comps : dict
+        Comparison dict containing "filing1", "filing2", "date1", "date2".
+    ticker : str
+        Ticker/CIK folder name under SEC_DIR.
+
+    Returns
+    -------
+    dict
+        Output of `min_edit_similarity`, including ticker, dates, distance, similarity,
+        token lengths, and sentiment of newly introduced words.
+
+    Raises
+    ------
+    FileNotFoundError
+        If either `item1A.txt` is missing.
+    """
     filings = comps["filing1"]
     filings2 = comps["filing2"]
     file = SEC_DIR / ticker / "10-K" / filings / "item1A.txt"
@@ -80,6 +195,37 @@ def process_comps(comps, ticker):
     return min_edit_similarity(text, text2, comps, ticker)
 
 def concurrency_runner(writer, ticker):
+    """
+    Compute similarity features for a ticker and write results using multiprocessing.
+
+    The function prepares consecutive filing comparisons and then uses a
+    ProcessPoolExecutor to parallelize `process_comps` across comparisons.
+    The resulting dictionaries are written via `writer.writerows(model)`.
+
+    Parameters
+    ----------
+    writer : csv.DictWriter | csv.writer-like
+        Writer object with a `.writerows(...)` method. For dict outputs, a
+        `csv.DictWriter` is recommended.
+    ticker : str
+        Ticker/CIK folder name under SEC_DIR.
+
+    Returns
+    -------
+    None
+
+    Side Effects
+    ------------
+    - Reads multiple `item1A.txt` files from disk.
+    - Writes rows to the provided writer.
+    - Prints status messages.
+
+    Notes
+    -----
+    The function currently catches all exceptions silently ("Skipped").
+    For research reproducibility, prefer logging the exception and ticker.
+    """
+
     try:
         ordered_data = prepare_data(ticker)
         model = []
@@ -98,6 +244,22 @@ def concurrency_runner(writer, ticker):
 
 
 def tokenize(text: str):
+    """
+    Tokenize text into lowercase word tokens.
+
+    Uses a simple regex that matches sequences of ASCII letters and apostrophes.
+    This is intentionally lightweight and avoids external tokenizers.
+
+    Parameters
+    ----------
+    text : str
+        Input text.
+
+    Returns
+    -------
+    list[str]
+        List of lowercase tokens.
+    """
     _WORD_RE = re.compile(r"[A-Za-z']+")
     return _WORD_RE.findall(text.lower())
 
@@ -117,7 +279,35 @@ def mean_vader_compound(words) -> float:
         return 0
 
 def levenshtein_tokens(a_tokens, b_tokens, ticker):
-    # Classic Wagner–Fischer with two rows
+    """
+    Compute token-level Levenshtein edit distance using a two-row dynamic program.
+
+    Implements Wagner–Fischer (edit distance) over token sequences. For memory
+    efficiency, the function ensures the second sequence is the shorter one.
+
+    Parameters
+    ----------
+    a_tokens : list[str]
+        Tokens from document A (newer filing in your usage).
+    b_tokens : list[str]
+        Tokens from document B (older filing in your usage).
+    ticker : str
+        Used only for progress printing.
+
+    Returns
+    -------
+    tuple[int, list[str]]
+        (distance, new_words) where:
+          - distance is the Levenshtein edit distance between token sequences,
+          - new_words are tokens present in `a_tokens` but not in `b_tokens`
+            (set difference, not edit-alignment-based).
+
+    Notes
+    -----
+    The progress printing should be driven by the i/j loop. In the current code,
+    `j` is referenced outside its loop and `new_words` computation is indented
+    inside the outer loop; this should be corrected for clarity and correctness.
+    """
     m, n = len(a_tokens), len(b_tokens)
     if n > m:
         # ensure n <= m for memory efficiency
@@ -151,6 +341,36 @@ def levenshtein_tokens(a_tokens, b_tokens, ticker):
     return prev[n], new_words
 
 def min_edit_similarity(text_a: str, text_b: str, dict, ticker):
+    """
+    Compute disclosure-change features from two texts using edit distance and sentiment.
+
+    Steps:
+      1) tokenize both texts,
+      2) compute token-level Levenshtein distance,
+      3) convert distance into a normalized similarity score:
+           similarity = 1 - dist / (len(A) + len(B)),
+      4) identify tokens in A not present in B and compute their mean VADER sentiment.
+
+    Parameters
+    ----------
+    text_a : str
+        Newer period text (Item 1A).
+    text_b : str
+        Older period text (Item 1A).
+    dict : dict
+        Metadata dict containing "date1" and "date2".
+    ticker : str
+        Firm identifier, stored in output and used for progress printing.
+
+    Returns
+    -------
+    dict
+        Dictionary containing:
+          - ticker, date_a, date_b,
+          - distance (int), similarity (float),
+          - len_a, len_b (token counts),
+          - sentiment (float): mean compound score of newly introduced words.
+    """
     A, B = tokenize(text_a), tokenize(text_b)
     dist, new_words = levenshtein_tokens(A, B, ticker)
     denom = len(A) + len(B)
