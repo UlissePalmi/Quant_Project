@@ -13,36 +13,18 @@ _sia = SentimentIntensityAnalyzer()
 #                                                MAKE COMPS FUNCTIONS
 # --------------------------------------------------------------------------------------------------------------------
 
-
 def check_date(folder, filing):
     """
-    Extract the filing date for a given filing folder by scanning `full-submission.txt`.
-
-    The function reads `folder/full-submission.txt` line-by-line and searches for the
-    substring `filing` (case-insensitive). When it finds a matching line, it parses
-    the portion after ':' and interprets it as a YYYYMMDD-like string.
-
-    Parameters
-    ----------
-    folder : pathlib.Path
-        Path to a single filing directory (e.g., SEC_DIR/<ticker>/10-K/<filing_id>).
-    filing : str
-        Filing identifier, typically the directory name (used as the search key).
-
-    Returns
-    -------
-    dict
-        Dictionary with keys:
-          - "year", "month", "day": extracted date components (strings),
-          - "filing": the filing identifier provided.
-
-    Raises
-    ------
-    FileNotFoundError
-        If `full-submission.txt` is not present.
-    UnboundLocalError
-        If no line matches `filing` and `date` is never set.
-        (You may want to initialize `date = ""` or raise a clearer error.)
+    Finds the date the 10-K was released.
+    
+    The function reads the `SEC_DIR/<ticker>/10-K/<filing_id>/full-submission.txt` file
+    line-by-line and searches for: <filing_id>: YYYYMMDD. When it finds a matching line,
+    it parses the portion after ':' and returns:
+        a dictionary
+            year
+            month
+            day
+            filing  
     """
     file = folder / "full-submission.txt"
     with open(file, "r", encoding="utf-8", errors="replace") as f:
@@ -78,9 +60,15 @@ def order_filings(records):
         key=lambda r: (int(r["year"]), int(r["month"]), int(r["day"])),
         reverse=True,
     )
-    return [r["filing"] for r in records_sorted]
 
-def make_comps(ordered_filings, date_data):
+    out = []
+    for r in records_sorted:
+        filing_id = r["filing"]
+        filing_date = f"{int(r['year']):04d}-{int(r['month']):02d}-{int(r['day']):02d}"
+        out.append([filing_id, filing_date])
+    return out
+
+def make_comps(date_data):
     """
     Build a list of consecutive filing comparisons (t vs t-1) for a ticker.
 
@@ -108,27 +96,19 @@ def make_comps(ordered_filings, date_data):
     which is O(n^2) in the number of filings. Converting `date_data` to a dict
     keyed by filing ID would make it O(n).
     """
+    ordered_filings = order_filings(date_data)
+
     comps_list = []
-    n1 = 0
-    n2 = 1
-    while n2 != len(ordered_filings):
-        for line in date_data:
-            if line["filing"] == ordered_filings[n1]:
-                date1 = line["year"] + "-" + line["month"] + "-" + line["day"]
-            if line["filing"] == ordered_filings[n2]:
-                date2 = line["year"] + "-" + line["month"] + "-" + line["day"]
-        comps = {
-            "date1": date1,
-            "filing1": ordered_filings[n1],
-            "date2": date2,
-            "filing2": ordered_filings[n2]
-        }
-        comps_list.append(comps)
-        n1 = n1 + 1
-        n2 = n2 + 1
+    for n in range(1, len(ordered_filings)):
+        comps_list.append({
+            "date1": ordered_filings[n - 1][1],
+            "filing1": ordered_filings[n - 1][0],
+            "date2": ordered_filings[n][1],
+            "filing2": ordered_filings[n][0]
+        })
     return comps_list
 
-def prepare_data(ticker):
+def prepare_data(cik):
     """
     Prepare consecutive 10-K Item 1A comparison pairs for a given ticker.
 
@@ -151,14 +131,18 @@ def prepare_data(ticker):
     Reads filing metadata from `full-submission.txt` to infer dates.
     """
     date_data = []
-    folders_path = SEC_DIR / ticker / "10-K"
+    folders_path = SEC_DIR / cik / "10-K"
     for i in folders_path.iterdir():
-        if (i / "item1A.txt").is_file():
+        if (i / "item1A.txt").is_file():    
             filing = i.name
             date_data.append(check_date(i, filing))
-    ordered_filings = order_filings(date_data)
-    comps_list = make_comps(ordered_filings, date_data)                                 # List of dictionary
+    comps_list = make_comps(date_data)                                 # List of dictionary
     return comps_list
+
+
+# ---------------------------------------------------------------------------------------
+
+
 
 def process_comps(comps, ticker):
     """
