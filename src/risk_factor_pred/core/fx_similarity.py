@@ -13,7 +13,7 @@ _sia = SentimentIntensityAnalyzer()
 #                                                MAKE COMPS FUNCTIONS
 # --------------------------------------------------------------------------------------------------------------------
 
-def check_date(folder, filing):
+def check_date(folder):
     """
     Finds the date the 10-K was released.
     
@@ -26,6 +26,7 @@ def check_date(folder, filing):
             day
             filing  
     """
+    filing = folder.name
     file = folder / "full-submission.txt"
     with open(file, "r", encoding="utf-8", errors="replace") as f:
         for line in f:
@@ -68,34 +69,21 @@ def order_filings(records):
         out.append([filing_id, filing_date])
     return out
 
-def make_comps(date_data):
+def make_comps(cik):
     """
-    Build a list of consecutive filing comparisons (t vs t-1) for a ticker.
+    Prepare consecutive 10-K Item 1A comparison pairs for a given cik.
 
-    Given filings ordered from most recent to oldest, the function pairs
-    (filing[0], filing[1]), (filing[1], filing[2]), ..., and attaches the
-    corresponding filing dates in YYYY-MM-DD format.
+    The function scans SEC_DIR/<ticker>/10-K/* and keeps only filings that
+    contain an extracted `item1A.txt`. It then orders filings by date and
+    constructs consecutive pairwise comparisons.
 
-    Parameters
-    ----------
-    ordered_filings : list[str]
-        Filing IDs ordered from most recent to oldest.
-    date_data : list[dict]
-        Output of `check_date` / metadata dictionaries containing date components.
-
-    Returns
-    -------
-    list[dict]
-        Each element includes:
-          - "date1", "filing1": newer filing date/ID
-          - "date2", "filing2": older filing date/ID
-
-    Notes
-    -----
-    This implementation currently searches `date_data` linearly for every pair,
-    which is O(n^2) in the number of filings. Converting `date_data` to a dict
-    keyed by filing ID would make it O(n).
+    Returns list[dict]
     """
+    date_data = []
+    folders_path = SEC_DIR / cik / "10-K"
+    for i in folders_path.iterdir():
+        date_data.append(check_date(i) if (i / "item1A.txt").is_file() else None) 
+    
     ordered_filings = order_filings(date_data)
 
     comps_list = []
@@ -106,37 +94,7 @@ def make_comps(date_data):
             "date2": ordered_filings[n][1],
             "filing2": ordered_filings[n][0]
         })
-    return comps_list
-
-def prepare_data(cik):
-    """
-    Prepare consecutive 10-K Item 1A comparison pairs for a given ticker.
-
-    The function scans SEC_DIR/<ticker>/10-K/* and keeps only filings that
-    contain an extracted `item1A.txt`. It then orders filings by date and
-    constructs consecutive pairwise comparisons.
-
-    Parameters
-    ----------
-    ticker : str
-        Ticker/CIK folder name under SEC_DIR.
-
-    Returns
-    -------
-    list[dict]
-        List of comparison dictionaries produced by `make_comps`.
-
-    Side Effects
-    ------------
-    Reads filing metadata from `full-submission.txt` to infer dates.
-    """
-    date_data = []
-    folders_path = SEC_DIR / cik / "10-K"
-    for i in folders_path.iterdir():
-        if (i / "item1A.txt").is_file():    
-            filing = i.name
-            date_data.append(check_date(i, filing))
-    comps_list = make_comps(date_data)                                 # List of dictionary
+    
     return comps_list
 
 
@@ -178,7 +136,7 @@ def process_comps(comps, ticker):
     text2 = file2.read_text(encoding="utf-8", errors="ignore")
     return min_edit_similarity(text, text2, comps, ticker)
 
-def concurrency_runner(writer, ticker):
+def concurrency_runner(writer, cik):
     """
     Compute similarity features for a ticker and write results using multiprocessing.
 
@@ -211,11 +169,11 @@ def concurrency_runner(writer, ticker):
     """
 
     try:
-        ordered_data = prepare_data(ticker)
+        ordered_data = make_comps(cik)
         model = []
         print("funzia")
         with ProcessPoolExecutor(max_workers=3) as executor:
-            model = list(executor.map(process_comps, ordered_data, repeat(ticker)))
+            model = list(executor.map(process_comps, ordered_data, repeat(cik)))
             writer.writerows(model)
     except:
         print("Skipped")
