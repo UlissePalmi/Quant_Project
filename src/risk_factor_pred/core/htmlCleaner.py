@@ -280,9 +280,14 @@ def get_content_before_sequence(html_content):
 
 def break_on_item_heads(text: str) -> str:
     """
-    Insert a newline before detected 'Item <number>[suffix].' headings.
+    Insert a newline before detected 'Item <number>[suffix].' headings
+    or 'Item <number> [text] <number>.
     """
-    _HEAD_DETECT = re.compile(r'\s*item\b\s*\d+[A-Za-z]?\s*\.', re.IGNORECASE)
+    _HEAD_DETECT = re.compile(
+        r'\s*items?\b\s*'
+        r'\d+[A-Za-z]?'
+        r'(?:\s*(?:and|to|through|-)\s*\d+[A-Za-z]?)*'
+        r'\s*\.',re.IGNORECASE)
     out = []
     last = 0
     for m in _HEAD_DETECT.finditer(text):
@@ -316,11 +321,11 @@ def clean_html(file_content):
     cleaned = loop_clean(cleaned)                                           # LOOP : empty tags
 
     cleaned = prepend_newline_to_p(cleaned)
-    cleaned = clean_lines(cleaned)
 
     cleaned = strip_all_html_tags(cleaned)
     cleaned = remove_numeric_entities(cleaned)
     cleaned = break_on_item_heads(cleaned)
+    cleaned = clean_lines(cleaned)
     return cleaned
 
 def print_clean_txt(html_content):
