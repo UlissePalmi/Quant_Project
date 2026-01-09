@@ -1,7 +1,7 @@
 from itertools import repeat
 from concurrent.futures import ProcessPoolExecutor
 from nltk.sentiment import SentimentIntensityAnalyzer
-from risk_factor_pred.consts import SEC_DIR
+from risk_factor_pred.consts import SEC_DIR, MAX_WORKERS
 import nltk
 import sys
 import re
@@ -15,16 +15,11 @@ _sia = SentimentIntensityAnalyzer()
 
 def check_date(folder):
     """
-    Finds the date the 10-K was released.
+    Finds the date the 10-K was released and returns a dict with "year", "month", "day" and "filing" keys
     
     The function reads the `SEC_DIR/<ticker>/10-K/<filing_id>/full-submission.txt` file
     line-by-line and searches for: <filing_id>: YYYYMMDD. When it finds a matching line,
-    it parses the portion after ':' and returns:
-        a dictionary
-            year
-            month
-            day
-            filing  
+    it parses the portion after ':' and returns a dictionary with date information 
     """
     filing = folder.name
     file = folder / "full-submission.txt"
@@ -44,17 +39,9 @@ def check_date(folder):
 
 def order_filings(records):
     """
-    Sort filing metadata records in reverse chronological order and return filing IDs.
-
-    Parameters
-    ----------
-    records : list[dict]
-        Each dict must include "year", "month", "day" and "filing" keys.
-
-    Returns
-    -------
-    list[str]
-        Filing identifiers ordered from most recent to oldest.
+    Receives a list of dict with filing_id and filing release date,
+    Sorts filings in reverse chronological order and returns a list
+    of lists containing filing_IDs and filing_date.
     """
     records_sorted = sorted(
         records,
@@ -71,7 +58,8 @@ def order_filings(records):
 
 def make_comps(cik):
     """
-    Prepare consecutive 10-K Item 1A comparison pairs for a given cik.
+    
+        Prepare consecutive 10-K Item 1A comparison pairs for a given cik.
 
     The function scans SEC_DIR/<ticker>/10-K/* and keeps only filings that
     contain an extracted `item1A.txt`. It then orders filings by date and
@@ -97,87 +85,42 @@ def make_comps(cik):
     
     return comps_list
 
+def concurrency_runner(writer, cik):
+    """
+    Compute similarity features for a CIK and write results using multiprocessing.
+
+    The function prepares consecutive filing by using the 'make_comps' function
+    then uses ProcessPoolExecutor to parallelize the similarity calculation across comparisons.
+    The resulting dictionaries are written via `writer.writerows(model)` on a csv file.
+    """
+    model = []
+    try:
+        with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            model = list(executor.map(process_comps, make_comps(cik), repeat(cik)))
+            writer.writerows(model)
+    except:
+        print("Skipped")
+
+
 
 # ---------------------------------------------------------------------------------------
 
 
 
-def process_comps(comps, ticker):
+def process_comps(comps, cik):
     """
     Compute similarity metrics for a single consecutive filing comparison.
 
     Loads `item1A.txt` for two filings (newer vs older) and computes token-level
     Levenshtein distance, similarity, and sentiment statistics for newly introduced
     words (relative to the older filing).
-
-    Parameters
-    ----------
-    comps : dict
-        Comparison dict containing "filing1", "filing2", "date1", "date2".
-    ticker : str
-        Ticker/CIK folder name under SEC_DIR.
-
-    Returns
-    -------
-    dict
-        Output of `min_edit_similarity`, including ticker, dates, distance, similarity,
-        token lengths, and sentiment of newly introduced words.
-
-    Raises
-    ------
-    FileNotFoundError
-        If either `item1A.txt` is missing.
     """
-    filings = comps["filing1"]
-    filings2 = comps["filing2"]
-    file = SEC_DIR / ticker / "10-K" / filings / "item1A.txt"
-    file2 = SEC_DIR / ticker / "10-K" / filings2 / "item1A.txt"
-    text = file.read_text(encoding="utf-8", errors="ignore")
-    text2 = file2.read_text(encoding="utf-8", errors="ignore")
-    return min_edit_similarity(text, text2, comps, ticker)
-
-def concurrency_runner(writer, cik):
-    """
-    Compute similarity features for a ticker and write results using multiprocessing.
-
-    The function prepares consecutive filing comparisons and then uses a
-    ProcessPoolExecutor to parallelize `process_comps` across comparisons.
-    The resulting dictionaries are written via `writer.writerows(model)`.
-
-    Parameters
-    ----------
-    writer : csv.DictWriter | csv.writer-like
-        Writer object with a `.writerows(...)` method. For dict outputs, a
-        `csv.DictWriter` is recommended.
-    ticker : str
-        Ticker/CIK folder name under SEC_DIR.
-
-    Returns
-    -------
-    None
-
-    Side Effects
-    ------------
-    - Reads multiple `item1A.txt` files from disk.
-    - Writes rows to the provided writer.
-    - Prints status messages.
-
-    Notes
-    -----
-    The function currently catches all exceptions silently ("Skipped").
-    For research reproducibility, prefer logging the exception and ticker.
-    """
-
-    try:
-        ordered_data = make_comps(cik)
-        model = []
-        print("funzia")
-        with ProcessPoolExecutor(max_workers=3) as executor:
-            model = list(executor.map(process_comps, ordered_data, repeat(cik)))
-            writer.writerows(model)
-    except:
-        print("Skipped")
-
+    filingNew, filingOld = comps["filing1"], comps["filing2"]
+    fileNew = SEC_DIR / cik / "10-K" / filingNew / "item1A.txt"
+    fileOld = SEC_DIR / cik / "10-K" / filingOld / "item1A.txt"
+    textNew = fileNew.read_text(encoding="utf-8", errors="ignore")
+    textOld = fileOld.read_text(encoding="utf-8", errors="ignore")
+    return min_edit_similarity(textNew, textOld, comps, cik)
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -185,46 +128,30 @@ def concurrency_runner(writer, cik):
 # --------------------------------------------------------------------------------------------------------------------
 
 
-def tokenize(text: str):
+def tokenize(text: str) -> list[str]:
     """
-    Tokenize text into lowercase word tokens.
-
-    Uses a simple regex that matches sequences of ASCII letters and apostrophes.
-    This is intentionally lightweight and avoids external tokenizers.
-
-    Parameters
-    ----------
-    text : str
-        Input text.
-
-    Returns
-    -------
-    list[str]
-        List of lowercase tokens.
+    Returns list of all elements in the string in lowercase.
     """
     _WORD_RE = re.compile(r"[A-Za-z']+")
     return _WORD_RE.findall(text.lower())
 
 def mean_vader_compound(words) -> float:
     """
-    Average VADER 'compound' score over a list of single-word strings.
+    Average VADER sentimant score over a list of single-word strings.
     Returns 0.0 for an empty list.
     """
     compounds = []
     for w in words:
-        w = (w or "").strip()
+        w = (w or "").strip()        # WWWWWWWHHHHHHHAAAAAATTTT?
         scores = {"compound": 0.0} if not w else _sia.polarity_scores(w)
         compounds.append(scores["compound"])
-    if len(compounds) != 0:
-        return sum(compounds) / len(compounds)
-    else:
-        return 0
+    return sum(compounds) / len(compounds) if len(compounds) != 0 else 0
 
-def levenshtein_tokens(a_tokens, b_tokens, ticker):
+def levenshtein_tokens(a_tokens, b_tokens, cik):
     """
     Compute token-level Levenshtein edit distance using a two-row dynamic program.
 
-    Implements Wagner–Fischer (edit distance) over token sequences. For memory
+    Implements Wagner-Fischer (edit distance) over token sequences. For memory
     efficiency, the function ensures the second sequence is the shorter one.
 
     Parameters
@@ -233,7 +160,7 @@ def levenshtein_tokens(a_tokens, b_tokens, ticker):
         Tokens from document A (newer filing in your usage).
     b_tokens : list[str]
         Tokens from document B (older filing in your usage).
-    ticker : str
+    cik : str
         Used only for progress printing.
 
     Returns
@@ -250,12 +177,14 @@ def levenshtein_tokens(a_tokens, b_tokens, ticker):
     `j` is referenced outside its loop and `new_words` computation is indented
     inside the outer loop; this should be corrected for clarity and correctness.
     """
+    # m, n, a_tokens, b_tokens = n, m, b_tokens, a_tokens if n > m else None
     m, n = len(a_tokens), len(b_tokens)
     if n > m:
         # ensure n <= m for memory efficiency
         a_tokens, b_tokens = b_tokens, a_tokens
         m, n = n, m
-
+    # SCrivi piu sinstetico
+    #
     prev = list(range(n + 1))  # row 0..n
     for i in range(1, m + 1):
         cur = [i] + [0]*n
@@ -272,7 +201,7 @@ def levenshtein_tokens(a_tokens, b_tokens, ticker):
             done_cells = (i - 1) * n + j
             total_cells = m * n
             pct = (done_cells / total_cells) * 100 if total_cells else 100.0
-            sys.stdout.write(f"\rTicker: {ticker} Progress: {pct:6.2f}%  (row {i}/{m}, col {j}/{n})")
+            sys.stdout.write(f"\rCik: {cik} Progress: {pct:6.2f}%  (row {i}/{m}, col {j}/{n})")
             sys.stdout.flush()
 
         b_set = set(b_tokens)
@@ -317,4 +246,12 @@ def min_edit_similarity(text_a: str, text_b: str, dict, ticker):
     dist, new_words = levenshtein_tokens(A, B, ticker)
     denom = len(A) + len(B)
     sim = 1.0 - (dist / denom if denom else 0.0)
-    return {"ticker": ticker, "date_a": dict["date1"], "date_b": dict["date2"], "distance": dist, "similarity": sim, "len_a": len(A), "len_b": len(B), "sentiment": mean_vader_compound(new_words)}
+    return {
+        "ticker": ticker, 
+        "date_a": dict["date1"], 
+        "date_b": dict["date2"], 
+        "distance": dist, 
+        "similarity": sim, 
+        "len_a": len(A), 
+        "len_b": len(B), 
+        "sentiment": mean_vader_compound(new_words)}

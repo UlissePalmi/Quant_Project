@@ -6,4 +6,5 @@ if __name__ == "__main__":
     ciks = sd.load_unique_ciks() if sd.inputLetter() == 'l' else [input("Enter CIK...").upper()]
     
     # Download 10-K and Remove HTML tags from previously created list
+    # Bug for item 1 and 2
     sd.download_n_clean(ciks)

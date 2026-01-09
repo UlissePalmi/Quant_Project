@@ -57,7 +57,7 @@ def download_n_clean(ciks):
     errors = []
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {executor.submit(workerTasks, cik=cik): cik for cik in ciks}
+        futures = {executor.submit(workerTasks, cik): cik for cik in ciks}
 
         # as_completed lets them run in parallel; we consume results as they finish
         for idx, future in enumerate(as_completed(futures), start=1):

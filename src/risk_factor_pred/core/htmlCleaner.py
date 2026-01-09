@@ -465,9 +465,9 @@ def print_10X(full_path, html_content, output_filename):
         new_file.write(html_content)
     print("\nCleaned content saved in {}".format(output_filename))
 
-def cleaner(ticker, output_filename):
+def cleaner(cik, output_filename):
     """
-    Clean all downloaded 10-K filings for a given ticker/CIK folder and write outputs.
+    Clean all downloaded 10-K filings for a given CIK folder and write outputs.
 
     This function:
       - locates the 10-K folder under SEC_DIR/<ticker>/10-K,
@@ -476,7 +476,7 @@ def cleaner(ticker, output_filename):
       - runs HTML cleaning + item-heading normalization,
       - writes the cleaned text to `output_filename` inside each filing directory.
     """
-    folders_path = SEC_DIR / ticker / "10-K"
+    folders_path = SEC_DIR / cik / "10-K"
     for p in folders_path.iterdir():
         print(p)
         full_path = os.path.join(p, output_filename)
