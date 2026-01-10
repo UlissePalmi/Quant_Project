@@ -12,6 +12,5 @@ if __name__ == "__main__":
     # Create list of ciks from excel file or request cik in input
     ciks = find_ciks() if sd.inputLetter() == 'l' else [input("Enter CIK...").upper()]
     
-    # Remove HTML tags from previously created list
-    for cik in ciks:
-        htmlCleaner.cleaner((cik), output_filename = "full-submission.txt")
+    # Remove HTML tags from each element of previously created list
+    [htmlCleaner.cleaner((cik), output_filename = "full-submission.txt") for cik in ciks]
