@@ -87,10 +87,10 @@ def number_of_rounds(item_dict, bool):
     rounds2 = [i for i in listAllItems if i==max_num-1]
     rounds = rounds2 if rounds > rounds2 else rounds
     
-    print(listAllItems)
     if bool == True:
         return len(rounds)
     else:
+        print(listAllItems)
         return listAllItems
 
 def table_content_builder(item_dict):
@@ -110,82 +110,31 @@ def table_content_builder(item_dict):
             tableContent.append(n + l)    
     return tableContent
 
-def make_item_loops(tableContent, n_rounds, item_dict):
+def final_list(tableContent, item_dict):
     """
-    Build multiple candidate sequences of item headings by scanning forward in the file.
+    Makes a list of dict that contains the actual items
 
-    The function attempts to construct `n_rounds` sequences of items. For each round,
-    it scans `item_dict` in increasing line-number order and selects the first
-    occurrence of each `tableContent` label that appears after the last selected line.
+    First, builds multiple candidate sequences of item headings by scanning in item_dict.
+    Secondly, Selects the candidate that is most probably the item list
 
-    Parameters
-    ----------
-    tableContent : list[str]
-        Candidate item labels in expected order.
-    max_item : int
-        Maximum numeric item (currently not used by this implementation).
-    n_rounds : int
-        Number of sequences ("rounds") to construct.
-    item_dict : list[dict]
-        Detected item headings with line numbers.
-
-    Returns
-    -------
-    list[list[dict]]
-        A list of candidate sequences. Each sequence is a list of dicts from `item_dict`
-        corresponding to detected headings in that round.
-
-    Notes
-    -----
-    This is a greedy matching algorithm. It does not validate that the selected
-    headings are the "true" section boundaries; it relies on downstream selection
-    (see `final_list`) to pick the best candidate.
+    Returns list[dict]: The selected sequence (list of dicts with 'Item number' and 'Item line').
     """
+
     list_lines = []
     last_ele = 0
-    boh = 0
-    while boh != n_rounds:
+    for _ in range(number_of_rounds(item_dict, bool=True)):
         lines = []
-        for t in tableContent:
+        for itemTC in tableContent:
             for r in item_dict:
-                if t == r.get('item_n') and r.get('line_no') > last_ele:
+                if itemTC == r.get('item_n') and r.get('line_no') > last_ele:
                     lines.append(r)
                     last_ele = r['line_no']
                     break
-        boh = boh + 1
         list_lines.append(lines)
-    return list_lines
 
-def final_list(list_lines):
-    """
-    Select the candidate item sequence that spans the most lines.
-
-    Given multiple candidate sequences produced by `make_item_loops`, this function
-    chooses the sequence with the largest line-number span (heuristically treating
-    that as the "actual" item headings rather than a shorter table-of-contents block).
-
-    Parameters
-    ----------
-    list_lines : list[list[dict]]
-        Candidate sequences of item-heading dicts.
-
-    Returns
-    -------
-    list[dict]
-        The selected sequence (list of dicts with 'item_n' and 'line_no').
-
-    Notes
-    -----
-    The current span calculation uses:
-        last_line - second_line
-    which assumes at least two items exist in each candidate. If a candidate
-    sequence is too short, this can raise an IndexError.
-    """
     diff = 0
-    #print(len(list_lines))
     for i in range(len(list_lines)):
         n = list_lines[i][-1]['line_no'] - list_lines[i][1]['line_no']
-        #print(n)
         if n > diff:
             num = i
             diff = n
@@ -265,12 +214,8 @@ def version2(path, p):
     Writes item files to disk and prints intermediate debugging output.
     """
     item_dict = item_dict_builder(path)                                                       # Make list of dict indicating all item n. and line n. for each item 
-    n_rounds = number_of_rounds(item_dict, bool=True)
-    
     tableContent = table_content_builder(item_dict)
-    list_lines = make_item_loops(tableContent, n_rounds, item_dict)
-    final_split = final_list(list_lines)                                                        # Identifies the list of dict that covers the most lines (aka actual items)
-    print_items(path, final_split, p)
+    print_items(path, final_list(tableContent, item_dict), p)
     time.sleep(0.5)
 
 def try_exercize(p):

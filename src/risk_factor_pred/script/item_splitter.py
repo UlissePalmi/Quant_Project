@@ -3,8 +3,8 @@ from risk_factor_pred.consts import SEC_DIR, MAX_WORKERS
 from concurrent.futures import ProcessPoolExecutor
 
 if __name__ == "__main__":
-    cik = "0000000020"
-    filings = "0000893220-06-000650"
+    cik = "0000002098"
+    filings = "0001026608-06-000045"
 
     if sd.inputLetter() == 'l':
         paths = []
